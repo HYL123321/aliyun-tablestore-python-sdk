@@ -4,11 +4,11 @@
 __all__ = ['OTSClient']
 
 import sys
-import urlparse
 import time
 import _strptime
 
 import logging
+from tablestore.compact import urlparse 
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:

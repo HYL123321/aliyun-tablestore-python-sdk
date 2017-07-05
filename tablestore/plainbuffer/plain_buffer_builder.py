@@ -3,10 +3,10 @@
 import sys
 import tablestore 
 from tablestore.metadata import *
-from plain_buffer_consts import *
-from plain_buffer_crc8 import *
-from plain_buffer_stream import *
-from plain_buffer_coded_stream import *
+from tablestore.plainbuffer.plain_buffer_consts import *
+from tablestore.plainbuffer.plain_buffer_crc8 import *
+from tablestore.plainbuffer.plain_buffer_stream import *
+from tablestore.plainbuffer.plain_buffer_coded_stream import *
 
 class PlainBufferBuilder(object):
     @staticmethod

@@ -5,7 +5,6 @@ import urllib
 import hmac
 import base64
 import time
-import urlparse
 import calendar
 import logging
 import sys
@@ -17,6 +16,7 @@ import google.protobuf.text_format as text_format
 
 import tablestore
 from tablestore.error import *
+from tablestore.compact import urlparse 
 from tablestore.protobuf.encoder import OTSProtoBufferEncoder
 from tablestore.protobuf.decoder import OTSProtoBufferDecoder
 import tablestore.protobuf.table_store_pb2 as pb2

@@ -1,6 +1,5 @@
 # -*- coding: utf8 -*-
 
-import httplib
 import time
 
 from urllib3.poolmanager import PoolManager
@@ -8,6 +7,7 @@ from urllib3.connectionpool import HTTPConnectionPool
 import certifi
 
 from tablestore.error import *
+from tablestore.compact import httplib
 
 _NETWORK_IO_TIME_COUNT_FLAG = False
 _network_io_time = 0

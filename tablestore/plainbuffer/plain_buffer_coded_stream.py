@@ -5,9 +5,9 @@ import struct
 from tablestore.const import *
 from tablestore.metadata import *
 from tablestore.error import *
-from plain_buffer_consts import *
-from plain_buffer_crc8 import *
-from plain_buffer_consts import *
+from tablestore.plainbuffer.plain_buffer_consts import *
+from tablestore.plainbuffer.plain_buffer_crc8 import *
+from tablestore.plainbuffer.plain_buffer_consts import *
 
 class PlainBufferCodedInputStream(object):
     def __init__(self, input_stream):
