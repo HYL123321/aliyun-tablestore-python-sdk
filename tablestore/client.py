@@ -21,6 +21,7 @@ from tablestore.protocol import OTSProtocol
 from tablestore.connection import ConnectionPool
 from tablestore.metadata import *
 from tablestore.retry import DefaultRetryPolicy
+from tablestore.credential_provider import *
 
 
 class OTSClient(object):
@@ -39,7 +40,7 @@ class OTSClient(object):
     DEFAULT_LOGGER_NAME = 'tablestore-client'
 
     protocol_class = OTSProtocol
-    connection_pool_class = ConnectionPool 
+    connection_pool_class = ConnectionPool
 
     def __init__(self, end_point, access_key_id, access_key_secret, instance_name, **kwargs):
         """
@@ -54,6 +55,12 @@ class OTSClient(object):
         ``instance_name``是要访问的实例名，通过官方网站控制台创建或通过管理员获取。
 
         ``sts_token``是访问OTS服务的STS token，从STS服务获取，具有有效期，过期后需要重新获取。
+
+        ``use_session_key``是否使用RAM Session Key。
+
+        ``session_key_region_id``Session Key所属Region
+
+        ``session_key_period``Session Key过期时间
 
         ``encoding``请求参数的字符串编码类型，默认是utf8。
 
@@ -111,11 +118,23 @@ class OTSClient(object):
                 "host of end_point should be specified, e.g. http://instance.cn-hangzhou.ots.aliyun.com."
             )
 
+        use_session_key = kwargs.get('use_session_key')
+        if use_session_key is None or not use_session_key:
+            self.credential_provider = BasicServiceCredentialsProvider(access_key_id, access_key_secret, sts_token)
+        else:
+            session_key_region_id = kwargs.get('session_key_region_id')
+            if session_key_region_id is None:
+                raise OTSClientError('session_key_region_id should be specified when using session key.')
+            session_key_period = kwargs.get('session_key_period')
+            if session_key_period is None:
+                session_key_period = 3600
+            self.credential_provider = STSSessionKeyCredentialsProvider(access_key_id, access_key_secret, session_key_region_id, session_key_period)
+
         # intialize protocol instance via user configuration
         self.protocol = self.protocol_class(
-            access_key_id, access_key_secret, sts_token, instance_name, self.encoding, self.logger
+            instance_name, self.encoding, self.logger
         )
-        
+
         # initialize connection via user configuration
         self.connection = self.connection_pool_class(
             host, path, timeout=self.socket_timeout, maxsize=self.max_connection,
@@ -128,9 +147,10 @@ class OTSClient(object):
         self.retry_policy = retry_policy
 
     def _request_helper(self, api_name, *args, **kwargs):
+        credentials = self.credential_provider.get_credentials()
 
         query, reqheaders, reqbody = self.protocol.make_request(
-            api_name, *args, **kwargs
+            credentials, api_name, *args, **kwargs
         )
 
         retry_times = 0
@@ -141,7 +161,7 @@ class OTSClient(object):
                 status, reason, resheaders, resbody = self.connection.send_receive(
                     query, reqheaders, reqbody
                 )
-                self.protocol.handle_error(api_name, query, status, reason, resheaders, resbody)
+                self.protocol.handle_error(credentials, api_name, query, status, reason, resheaders, resbody)
                 break
 
             except OTSServiceError as e:
@@ -153,7 +173,7 @@ class OTSClient(object):
                 else:
                     raise e
 
-        return self.protocol.parse_response(api_name, status, resheaders, resbody)
+        return self.protocol.parse_response(credentials, api_name, status, resheaders, resbody)
 
     def create_table(self, table_meta, table_options, reserved_throughput):
         """
@@ -197,7 +217,7 @@ class OTSClient(object):
     def list_table(self):
         """
         说明：获取所有表名的列表。
-        
+
         返回：表名列表。
 
         ``table_list``表示获取的表名列表，类型为tuple，如：('MyTable1', 'MyTable2')。
@@ -210,9 +230,9 @@ class OTSClient(object):
         return self._request_helper('ListTable')
 
     def update_table(self, table_name, table_options = None, reserved_throughput = None):
-        """ 
+        """
         说明：更新表属性，目前只支持修改预留读写吞吐量。
-        
+
         ``table_name``是对应的表名。
         ``table_options``是``tablestore.metadata.TableOptions``类的示例，它包含time_to_live，max_version和max_time_deviation三个参数。
         ``reserved_throughput``是``tablestore.metadata.ReservedThroughput``类的实例，表示预留读写吞吐量。
@@ -249,7 +269,7 @@ class OTSClient(object):
 
         return self._request_helper('DescribeTable', table_name)
 
-    def get_row(self, table_name, primary_key, columns_to_get=None, 
+    def get_row(self, table_name, primary_key, columns_to_get=None,
                 column_filter=None, max_version=1, time_range=None,
                 start_column=None, end_column=None, token=None):
         """
@@ -276,7 +296,7 @@ class OTSClient(object):
         """
 
         return self._request_helper(
-                    'GetRow', table_name, primary_key, columns_to_get, 
+                    'GetRow', table_name, primary_key, columns_to_get,
                     column_filter, max_version, time_range,
                     start_column, end_column, token
         )
@@ -308,7 +328,7 @@ class OTSClient(object):
         return self._request_helper(
                     'PutRow', table_name, row, condition, return_type
         )
-    
+
     def update_row(self, table_name, row, condition, return_type = None):
         """
         说明：更新一行数据。
@@ -334,7 +354,7 @@ class OTSClient(object):
             }
             row = Row(primary_key, update_of_attribute_columns)
             condition = Condition('EXPECT_EXIST')
-            consumed = client.update_row('myTable', row, condition) 
+            consumed = client.update_row('myTable', row, condition)
         """
 
         return self._request_helper(
@@ -360,7 +380,7 @@ class OTSClient(object):
             primary_key = [('gid',1), ('uid',101)]
             row = Row(primary_key)
             condition = Condition('IGNORE')
-            consumed, return_row = client.delete_row('myTable', row, condition) 
+            consumed, return_row = client.delete_row('myTable', row, condition)
         """
 
         return self._request_helper(
@@ -422,7 +442,7 @@ class OTSClient(object):
         ``response``为返回的结果，类型为tablestore.metadata.BatchWriteRowResponse
 
         示例：
-            # put 
+            # put
             row_items = []
             row = Row([('gid',0), ('uid', 0)], [('index', 6), ('addr', 'china')])
             row_items.append(PutRowItem(row,
@@ -450,15 +470,15 @@ class OTSClient(object):
         """
 
         response = self._request_helper('BatchWriteRow', request)
-        
+
         return BatchWriteRowResponse(request, response)
 
 
-    def get_range(self, table_name, direction, 
-                  inclusive_start_primary_key, 
-                  exclusive_end_primary_key, 
-                  columns_to_get=None, 
-                  limit=None, 
+    def get_range(self, table_name, direction,
+                  inclusive_start_primary_key,
+                  exclusive_end_primary_key,
+                  columns_to_get=None,
+                  limit=None,
                   column_filter=None,
                   max_version=1,
                   time_range=None,
@@ -490,18 +510,18 @@ class OTSClient(object):
 
         示例：
 
-            inclusive_start_primary_key = [('gid',1), ('uid',INF_MIN)] 
-            exclusive_end_primary_key = [('gid',4), ('uid',INF_MAX)] 
+            inclusive_start_primary_key = [('gid',1), ('uid',INF_MIN)]
+            exclusive_end_primary_key = [('gid',4), ('uid',INF_MAX)]
             columns_to_get = ['name', 'address', 'mobile', 'age']
             consumed, next_start_primary_key, row_list, next_token = client.get_range(
-                        'myTable', 'FORWARD', 
+                        'myTable', 'FORWARD',
                         inclusive_start_primary_key, exclusive_end_primary_key,
                         columns_to_get, 100
             )
         """
 
         return self._request_helper(
-                    'GetRange', table_name, direction, 
+                    'GetRange', table_name, direction,
                     inclusive_start_primary_key, exclusive_end_primary_key,
                     columns_to_get, limit,
                     column_filter, max_version,
@@ -511,12 +531,12 @@ class OTSClient(object):
 
     def xget_range(self, table_name, direction,
                    inclusive_start_primary_key,
-                   exclusive_end_primary_key, 
+                   exclusive_end_primary_key,
                    consumed_counter,
-                   columns_to_get=None, 
+                   columns_to_get=None,
                    count=None,
                    column_filter=None,
-                   max_version=1, 
+                   max_version=1,
                    time_range=None,
                    start_column=None,
                    end_column=None,
@@ -547,16 +567,16 @@ class OTSClient(object):
         示例：
 
             consumed_counter = CapacityUnit(0, 0)
-            inclusive_start_primary_key = [('gid',1), ('uid',INF_MIN)] 
-            exclusive_end_primary_key = [('gid',4), ('uid',INF_MAX)] 
+            inclusive_start_primary_key = [('gid',1), ('uid',INF_MIN)]
+            exclusive_end_primary_key = [('gid',4), ('uid',INF_MAX)]
             columns_to_get = ['name', 'address', 'mobile', 'age']
             range_iterator = client.xget_range(
-                        'myTable', Direction.FORWARD, 
+                        'myTable', Direction.FORWARD,
                         inclusive_start_primary_key, exclusive_end_primary_key,
                         consumed_counter, columns_to_get, 100
             )
             for row in range_iterator:
-               pass 
+               pass
         """
 
         if not isinstance(consumed_counter, CapacityUnit):
@@ -576,7 +596,7 @@ class OTSClient(object):
         while next_start_pk:
             consumed, next_start_pk, row_list, next_token = self.get_range(
                 table_name, direction,
-                next_start_pk, exclusive_end_primary_key, 
+                next_start_pk, exclusive_end_primary_key,
                 columns_to_get, left_count, column_filter,
                 max_version, time_range, start_column,
                 end_column, token
@@ -587,7 +607,7 @@ class OTSClient(object):
                 if left_count is not None:
                     left_count -= 1
                     if left_count <= 0:
-                        return 
+                        return
 
 
     def _validate_parameter(self, endpoint, access_key_id, access_key_secret, instance_name):
@@ -604,5 +624,5 @@ class OTSClient(object):
             raise OTSClientError('instance_name is None or empty.')
 
 
-        
+
 

@@ -10,8 +10,8 @@ import calendar
 import logging
 import sys
 import platform
-import datetime 
-from email.utils import parsedate 
+import datetime
+from email.utils import parsedate
 
 import google.protobuf.text_format as text_format
 
@@ -51,10 +51,7 @@ class OTSProtocol(object):
         'GetRange'
     ]
 
-    def __init__(self, user_id, user_key, sts_token, instance_name, encoding, logger):
-        self.user_id = user_id
-        self.user_key = user_key
-        self.sts_token = sts_token
+    def __init__(self, instance_name, encoding, logger):
         self.instance_name = instance_name
         self.encoder = self.encoder_class(encoding)
         self.decoder = self.decoder_class(encoding)
@@ -64,15 +61,15 @@ class OTSProtocol(object):
         headers_item = ["%s:%s" % (k.lower(), v.strip()) for k, v in headers.iteritems() if k.startswith('x-ots-') and k != 'x-ots-signature']
         return "\n".join(sorted(headers_item))
 
-    def _call_signature_method(self, signature_string):
+    def _call_signature_method(self, credentials, signature_string):
         # The signature method is supposed to be HmacSHA1
         # A switch case is required if there is other methods available
         signature = base64.b64encode(hmac.new(
-            self.user_key, signature_string, hashlib.sha1
+            credentials.get_access_key(), signature_string, hashlib.sha1
         ).digest())
         return signature
 
-    def _make_request_signature(self, query, headers):
+    def _make_request_signature(self, credentials, query, headers):
         uri, param_string, query_string = urlparse.urlparse(query)[2:5]
 
         # TODO a special query should be input to test query sorting,
@@ -84,44 +81,44 @@ class OTSProtocol(object):
 
         headers_string = self._make_headers_string(headers)
         signature_string += headers_string + '\n'
-        signature = self._call_signature_method(signature_string)
+        signature = self._call_signature_method(credentials, signature_string)
         return signature
 
-    def _make_headers(self, body, query):
+    def _make_headers(self, credentials, body, query):
         # compose request headers and process request body if needed
 
         md5 = base64.b64encode(hashlib.md5(body).digest())
 
         date = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z')
-        
+
         headers = {
             'x-ots-date' : date,
             'x-ots-apiversion' : self.api_version,
-            'x-ots-accesskeyid' : self.user_id,
+            'x-ots-accesskeyid' : credentials.get_access_id(),
             'x-ots-instancename' : self.instance_name,
             'x-ots-contentmd5' : md5,
         }
 
-        if self.sts_token != None:
-            headers['x-ots-ststoken'] = self.sts_token
+        if credentials.get_sts_token() != None:
+            headers['x-ots-ststoken'] = credentials.get_sts_token()
 
-        signature = self._make_request_signature(query, headers)
+        signature = self._make_request_signature(credentials, query, headers)
         headers['x-ots-signature'] = signature
-        headers['User-Agent'] = self.user_agent 
+        headers['User-Agent'] = self.user_agent
         return headers
 
-    def _make_response_signature(self, query, headers):
+    def _make_response_signature(self, credentials, query, headers):
         uri = urlparse.urlparse(query)[2]
         headers_string = self._make_headers_string(headers)
 
         signature_string = headers_string + '\n' + uri
-        signature = self._call_signature_method(signature_string)
+        signature = self._call_signature_method(credentials, signature_string)
         return signature
 
     def _convert_urllib3_headers(self, headers):
         """
-        old urllib3 headers: {'header1':'value1', 'header2':'value2'} 
-        new urllib3 headers: {'header1':('header1', 'value1'), 'header2':('header2', 'value2')} 
+        old urllib3 headers: {'header1':'value1', 'header2':'value2'}
+        new urllib3 headers: {'header1':('header1', 'value1'), 'header2':('header2', 'value2')}
         """
         std_headers = {}
         for k,v in headers.iteritems():
@@ -137,9 +134,9 @@ class OTSProtocol(object):
 
         # 1, make sure we have all headers
         header_names = [
-            'x-ots-contentmd5', 
-            'x-ots-requestid', 
-            'x-ots-date', 
+            'x-ots-contentmd5',
+            'x-ots-requestid',
+            'x-ots-date',
             'x-ots-contenttype',
         ]
 
@@ -154,20 +151,20 @@ class OTSProtocol(object):
             if md5 != headers['x-ots-contentmd5']:
                 raise OTSClientError('MD5 mismatch in response.')
 
-        # 3, check date 
+        # 3, check date
         if 'x-ots-date' in headers:
             try:
                 server_time = datetime.datetime.strptime(headers['x-ots-date'], "%Y-%m-%dT%H:%M:%S.%fZ")
             except ValueError:
                 raise OTSClientError('Invalid date format in response.')
-        
+
             # 4, check date range
             server_unix_time = time.mktime(server_time.timetuple())
             now_unix_time = time.mktime(datetime.datetime.utcnow().timetuple())
             if abs(server_unix_time - now_unix_time) > 15 * 60:
                 raise OTSClientError('The difference between date in response and system time is more than 15 minutes.')
 
-    def _check_authorization(self, query, headers, status=None):
+    def _check_authorization(self, credentials, query, headers, status=None):
         auth = headers.get('authorization')
         if auth is None:
             if status >= 200 and status < 300:
@@ -181,27 +178,27 @@ class OTSProtocol(object):
 
         # 2, check accessid
         access_id, signature = auth[4:].split(':')
-        if access_id != self.user_id:
+        if access_id != credentials.get_access_id():
             raise OTSClientError('Invalid accesskeyid in response.')
 
         # 3, check signature
-        if signature != self._make_response_signature(query, headers):
+        if signature != self._make_response_signature(credentials, query, headers):
             raise OTSClientError('Invalid signature in response.')
 
-    def make_request(self, api_name, *args, **kwargs):
+    def make_request(self, credentials, api_name, *args, **kwargs):
         if api_name not in self.api_list:
             raise OTSClientError('API %s is not supported.' % api_name)
 
         proto = self.encoder.encode_request(api_name, *args, **kwargs)
         body = proto.SerializeToString()
-            
+
         query = '/' + api_name
-        headers = self._make_headers(body, query)
+        headers = self._make_headers(credentials, body, query)
 
         if self.logger.level <= logging.DEBUG:
-            # prevent to generate formatted message which is time consuming 
+            # prevent to generate formatted message which is time consuming
             self.logger.debug("OTS request, API: %s, Headers: %s, Protobuf: %s" % (
-                api_name, headers, 
+                api_name, headers,
                 text_format.MessageToString(proto, as_utf8=True, as_one_line=True)
             ))
 
@@ -213,7 +210,7 @@ class OTSProtocol(object):
             request_id = ""
         return request_id
 
-    def parse_response(self, api_name, status, headers, body):
+    def parse_response(self, credentials, api_name, status, headers, body):
         if api_name not in self.api_list:
             raise OTSClientError("API %s is not supported." % api_name)
 
@@ -229,20 +226,20 @@ class OTSProtocol(object):
             raise OTSClientError(error_message, status)
 
         if self.logger.level <= logging.DEBUG:
-            # prevent to generate formatted message which is time consuming 
+            # prevent to generate formatted message which is time consuming
             request_id = self._get_request_id_string(headers)
             self.logger.debug("OTS response, API: %s, RequestID: %s, Protobuf: %s." % (
-                api_name, request_id, 
+                api_name, request_id,
                 text_format.MessageToString(proto, as_utf8=True, as_one_line=True)
             ))
         return ret
 
-    def handle_error(self, api_name, query, status, reason, headers, body):
+    def handle_error(self, credentials, api_name, query, status, reason, headers, body):
         # convert headers according to different urllib3 versions.
         std_headers = self._convert_urllib3_headers(headers)
 
         if self.logger.level <= logging.DEBUG:
-            # prevent to generate formatted message which is time consuming 
+            # prevent to generate formatted message which is time consuming
             self.logger.debug("OTS response, API: %s, Status: %s, Reason: %s, " \
                 "Headers: %s" % (api_name, status, reason, std_headers))
 
@@ -253,12 +250,12 @@ class OTSProtocol(object):
         try:
             self._check_headers(std_headers, body, status=status)
             if status != 403:
-                self._check_authorization(query, std_headers, status=status)
+                self._check_authorization(credentials, query, std_headers, status=status)
         except OTSClientError as e:
             e.http_status = status
             e.message += " HTTP status: %s." % status
             raise e
-        
+
         if status >= 200 and status < 300:
             return
         else:
@@ -276,7 +273,7 @@ class OTSProtocol(object):
 
             try:
                 if status == 403 and error_proto.code != "OTSAuthFailed":
-                    self._check_authorization(query, std_headers)
+                    self._check_authorization(credentials, query, std_headers)
             except OTSClientError as e:
                 e.http_status = status
                 e.message += " HTTP status: %s." % status
