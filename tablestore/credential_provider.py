@@ -1,5 +1,7 @@
 # -*- coding: utf8 -*-
 import time
+import json
+import threading
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.request import RpcRequest
 from aliyunsdkcore.auth.algorithm import sha_hmac256
@@ -36,10 +38,9 @@ class BasicCredentials(ServiceCredentials):
 
 class SessionCredentials(ServiceCredentials):
 
-    def __init__(self, access_id, access_key, session_token, session_duration_in_seconds):
+    def __init__(self, access_id, access_key, session_duration_in_seconds):
         self.access_id = access_id
         self.access_key = access_key
-        self.session_token = session_token
         self.session_duration_in_seconds = session_duration_in_seconds
         self.session_starttime = time.time()
 
@@ -50,9 +51,9 @@ class SessionCredentials(ServiceCredentials):
         return self.access_key
 
     def get_sts_token(self):
-        return self.session_token
+        return None
 
-    def will_soon_expire(self):
+    def will_soon_expired(self):
         if self.session_duration_in_seconds == 0:
             return False
         else:
@@ -75,6 +76,8 @@ class STSSessionKeyCredentialsProvider(ServiceCredentialsProvider):
     def __init__(self, public_id, private_key, region_id, session_period):
         self._sts_client = AcsClient(public_id, private_key, region_id)
 	self._session_period = session_period
+        self._credentials = None
+        self._lock = threading.Lock()
 
     def _get_session_ak_and_sk(self):
         request = GetSessionAkRequest()
@@ -97,8 +100,11 @@ class STSSessionKeyCredentialsProvider(ServiceCredentialsProvider):
                 raise
 
     def get_credentials(self):
-	credentials = self._get_session_ak_and_sk()
-	return credentials
+        if self._credentials is None or self.credentials.will_soon_expired():
+            with self._lock:
+                if self._credentials is None or self.credentials.will_soon_expired():
+                    self._credentials = self._get_session_ak_and_sk()
+	return self._credentials
 
 class GetSessionAkRequest(RpcRequest):
     def __init__(self):
