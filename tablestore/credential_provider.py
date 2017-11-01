@@ -100,9 +100,9 @@ class STSSessionKeyCredentialsProvider(ServiceCredentialsProvider):
                 raise
 
     def get_credentials(self):
-        if self._credentials is None or self.credentials.will_soon_expired():
+        if self._credentials is None or self._credentials.will_soon_expired():
             with self._lock:
-                if self._credentials is None or self.credentials.will_soon_expired():
+                if self._credentials is None or self._credentials.will_soon_expired():
                     self._credentials = self._get_session_ak_and_sk()
 	return self._credentials
 
