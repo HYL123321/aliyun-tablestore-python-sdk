@@ -85,21 +85,27 @@ def _get_pk(input):
 def _utf8(input):
     return str(bytearray(input, "utf-8"))
 
-def _get_pk_value(meta, input):
-    items = input.split(",")
-    if len(meta) != len(items):
-        raise Exception("The count of primary key is %s, but input len is %s"%(len(meta), len(items)))
-    out = []
-    for i in range(0, len(items)):
-        p = meta[i]
-        if p[1] == "INTEGER":
-            out.append((_utf8(p[0]), int(items[i])))
-        elif p[1] == "STRING":
-            out.append((_utf8(p[0]), _utf8(items[i])))
-        else:
-            raise Exception("Not suppert the type(%s)."%(p[1]))
+def _get_pk_value(meta, input, default=None):
+    if input:
+        items = input.split(",")
+        if len(meta) != len(items):
+            raise Exception("The count of primary key is %s, but input len is %s"%(len(meta), len(items)))
+        out = []
+        for i in range(0, len(items)):
+            p = meta[i]
+            if p[1] == "INTEGER":
+                out.append((_utf8(p[0]), int(items[i])))
+            elif p[1] == "STRING":
+                out.append((_utf8(p[0]), _utf8(items[i])))
+            else:
+                raise Exception("Not suppert the type(%s)."%(p[1]))
 
-    return out
+        return out
+    else:
+        out = []
+        for m in meta:
+            out.append((_utf8(m[0]), default))
+        return out
 
 def _get_attr_value(input):
     items = input.split(",")
@@ -227,7 +233,7 @@ def gen_sub_parser():
 
     # config
     sub_config = subs.add_parser('config', help="config the tablestore.")
-    sub_config.add_argument("--instance", dest="instance", required=True, help="tablestore instance name")
+    sub_config.add_argument("--instance", dest="instance", help="tablestore instance name")
     sub_config.add_argument("--endpoint", dest="endpoint", help="tablestore endpoint")
     sub_config.add_argument("--accessid", dest="accessid", help="tablestore accessid")
     sub_config.add_argument("--accesskey", dest="accesskey", help="tablestore accesskey")
@@ -277,7 +283,7 @@ def gen_sub_parser():
 
     # get row
     sub_pr = subs.add_parser('scan', help="scan the specify range data.")
-    sub_pr.add_argument("--name", dest="name", required=True, help="table name")
+    sub_pr.add_argument("-n", "--name", dest="name", required=True, help="table name")
     sub_pr.add_argument("--begin", dest="begin", help="begin primary key")
     sub_pr.add_argument("--end", dest="end", help="end primary key")
     sub_pr.add_argument("--limit", dest="limit", help="count of return rows.")
