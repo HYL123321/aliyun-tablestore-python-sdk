@@ -242,8 +242,6 @@ def gen_sub_parser():
     # list table
     sub_lt = subs.add_parser('lt', help="list table name.")
     sub_lt.set_defaults(func=_handle_list_table)
-    sub_lt = subs.add_parser('list_table', help="list table name.")
-    sub_lt.set_defaults(func=_handle_list_table)
 
     # create table
     sub_ct = subs.add_parser('ct', help="create table name.")
@@ -254,17 +252,10 @@ def gen_sub_parser():
     sub_ct.add_argument("--ttl", dest="ttl", default="-1", help="time to live")
     sub_ct.add_argument("--version", dest="version", default="1", help="max version")
     sub_ct.set_defaults(func=_handle_create_table)
-    sub_ct = subs.add_parser('create_table', help="create table name.")
-    sub_ct.add_argument("--name", dest="name", required=True, help="table name")
-    sub_ct.add_argument("--primary_key", dest="primary_key", required=True, help="primary key")
-    sub_ct.add_argument("--cu", dest="cu", default="0,0", help="reserved capacity unit")
-    sub_ct.add_argument("--ttl", dest="ttl", default="-1", help="time to live")
-    sub_ct.add_argument("--version", dest="version", default="1", help="max version")
-    sub_ct.set_defaults(func=_handle_create_table)
 
     # delete table
     # TODO  add force
-    sub_dt = subs.add_parser('dt', help="list table name.")
+    sub_dt = subs.add_parser('dt', help="delete table.")
     sub_dt.add_argument("--name", dest="name", required=True, help="table name")
     sub_dt.set_defaults(func=_handle_delete_table)
 
@@ -346,7 +337,7 @@ class InteractiveCmd(cmd.Cmd):
         sys.exit(0)
 
     def do_help(self, line):
-        self.default(line)
+        self.parser.print_help()
 
     def default(self, line):
         if not line:
@@ -365,6 +356,7 @@ def command_mode(parser, args):
 
 def _handle_mode(args):
     global GLOBAL_CONF
+
     GLOBAL_CONF = _get_ts_config()
     sub_parser = gen_sub_parser()
     if args.cmd:
