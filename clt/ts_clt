@@ -10,6 +10,7 @@ import cmd
 from tablestore import *
 
 GLOBAL_CONF = None
+GLOBAL_RUNNING = True
 
 VERSION = "2017-11-05"
 GLOBAL_CONFIG_FILE = ".table_store_config"
@@ -289,7 +290,7 @@ def gen_sub_parser():
     # import 
     sub_import = subs.add_parser('import', help="import data of file to tablestore")
     sub_import.add_argument("--name", dest="name", required=True, help="table name")
-    sub_import.add_argument("--file", dest="file", required=True, help="import data file")
+    sub_import.add_argument("--file", dest="file", required=True, help="import data file, rowformat: '{PrimaryKeyValues}, {Name}:{Type}:{Value},'")
     sub_import.set_defaults(func=_handle_import)
 
     # export 
@@ -332,6 +333,8 @@ class InteractiveCmd(cmd.Cmd):
             print c
 
     def do_quit(self, line):
+        global GLOBAL_RUNNING
+        GLOBAL_RUNNING = False
         self._save_cmd()
         print "Bye"
         sys.exit(0)
@@ -356,6 +359,7 @@ def command_mode(parser, args):
 
 def _handle_mode(args):
     global GLOBAL_CONF
+    global GLOBAL_RUNNING
 
     GLOBAL_CONF = _get_ts_config()
     sub_parser = gen_sub_parser()
@@ -363,7 +367,11 @@ def _handle_mode(args):
         command_mode(sub_parser, args)
     else:
         print "Aliyun TableStore Command Line Tool\nVersion %s \n@Copyright 2017 Alibaba Cloud Computing Co., Ltd. All rights reserved." % (VERSION)
-        InteractiveCmd().init(sub_parser, args).cmdloop()
+        while GLOBAL_RUNNING:
+            try:
+                InteractiveCmd().init(sub_parser, args).cmdloop()
+            except SystemExit, e:
+                pass
 
 def gen_mode_parser():
     parser = argparse.ArgumentParser()
