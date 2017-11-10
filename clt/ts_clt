@@ -290,7 +290,7 @@ def gen_sub_parser():
     # import 
     sub_import = subs.add_parser('import', help="import data of file to tablestore")
     sub_import.add_argument("--name", dest="name", required=True, help="table name")
-    sub_import.add_argument("--file", dest="file", required=True, help="import data file, rowformat: '{PrimaryKeyValues}, {Name}:{Type}:{Value},'")
+    sub_import.add_argument("--file", dest="file", required=True, help="import data file,  row format: '{PrimaryKeyValues}, {Name}:{Type}:{Value},'")
     sub_import.set_defaults(func=_handle_import)
 
     # export 
@@ -314,8 +314,8 @@ class InteractiveCmd(cmd.Cmd):
         try:
             with open(GLOBAL_HISTORY_FILE, "w") as fp:
                 length = len(self.cmds)
-                if length > 10:
-                    fp.write(json.dumps(self.cmds[length - 10:length], indent=4))
+                if length > 50:
+                    fp.write(json.dumps(self.cmds[length - 50:length], indent=4))
                 else:
                     fp.write(json.dumps(self.cmds, indent=4))
 
@@ -335,7 +335,6 @@ class InteractiveCmd(cmd.Cmd):
     def do_quit(self, line):
         global GLOBAL_RUNNING
         GLOBAL_RUNNING = False
-        self._save_cmd()
         print "Bye"
         sys.exit(0)
 
@@ -346,6 +345,7 @@ class InteractiveCmd(cmd.Cmd):
         if not line:
             return
         self.cmds.append(line)
+        self._save_cmd()
 
         argv = line.split(' ')
         result = self.parser.parse_args(argv)
