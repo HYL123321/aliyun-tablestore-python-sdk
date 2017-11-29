@@ -11,7 +11,8 @@ install:
 - pip install --upgrade mock
 - ./setup.py install
 script:
-- nosetests tests/ --with-cov -s -v
+- cd tests
+- nosetests . --with-cov -s -v
 after_success:
 - coveralls
 env:
