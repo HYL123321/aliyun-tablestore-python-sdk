@@ -1,7 +1,9 @@
 #*-coding:utf-8-*-
 import subprocess
 
-import test_config
+from . import test_config
+from . import restriction
+from builtins import int 
 from unittest import TestCase
 from tablestore import * 
 from tablestore.error import * 
@@ -9,10 +11,10 @@ from tablestore.retry import *
 import types
 import math
 import time
-import restriction
 import traceback
-import commands
-import sys 
+#import commands
+import sys
+import six
 
 import os 
 import inspect
@@ -66,6 +68,11 @@ class APITestBase(TestCase):
         raise AssertionError
 
     def assert_equal(self, res, expect_res):
+        if isinstance(res, six.binary_type):
+            res = res.decode('utf-8')
+        if isinstance(expect_res, six.binary_type):
+            expect_res = expect_res.decode('utf-8')
+            
         if res != expect_res:
             #self.logger.warn("\nAssertion Failed\nactual: %s\nexpect: %s\n" % (res.decode('utf-8'), expect_res.decode('utf-8')) + "".join(traceback.format_stack()))
             self.assertEqual(res, expect_res)
@@ -295,9 +302,9 @@ class APITestBase(TestCase):
             sum += len(v[0])
             if isinstance(v[1], bool):
                 sum += 1
-            elif isinstance(v[1], (int, long)):
+            elif isinstance(v[1], int):
                 sum += 8
-            elif isinstance(v[1], (types.StringType, bytearray, unicode)):
+            elif isinstance(v[1], (six.binary_type, bytearray, six.text_type)):
                 sum += len(v[1])
             else:
                 raise Exception("wrong type is set in primary value")
@@ -308,9 +315,9 @@ class APITestBase(TestCase):
                 pass
             elif isinstance(v[1], bool):
                 sum += 1
-            elif isinstance(v[1], (int, long, float)):
+            elif isinstance(v[1], (int, float)):
                 sum += 8
-            elif isinstance(v[1], (types.StringType, bytearray, unicode)):
+            elif isinstance(v[1], (six.binary_type, bytearray, six.text_type)):
                 sum += len(v[1])
             else:
                 raise Exception("wrong type is set in column value") 

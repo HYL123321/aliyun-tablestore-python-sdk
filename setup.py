@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 import re
+import sys
 
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
 
+if sys.version_info[0] == 2:
+    base_dir = 'py2'
+elif sys.version_info[0] == 3:
+    base_dir = 'py3'
 
 version = ''
 with open('tablestore/__init__.py', 'r') as fd:
@@ -25,7 +30,8 @@ setup(
     description='Aliyun TableStore(OTS) SDK',
     long_description=readme,
     packages=['tablestore', 'tablestore.protobuf', 'tablestore.plainbuffer'],
-    install_requires=['protobuf-py3>=2.5.1', 'urllib3>=1.14', 'certifi>=2016.2.28'],
+    package_dir={'tablestore.protobuf': 'tablestore/protobuf/' + base_dir},
+    install_requires=['protobuf-py3>=2.5.1', 'urllib3>=1.14', 'certifi>=2016.2.28', 'crcmod>=1.7', 'future>=0.16', 'six>=1.11.0'],
     include_package_data=True,
     url='https://cn.aliyun.com/product/ots',
     classifiers=[

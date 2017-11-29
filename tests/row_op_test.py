@@ -9,7 +9,6 @@ from tablestore.error import *
 import math
 import time
 
-
 class RowOpTest(APITestBase):
 
     """行读写测试"""
@@ -385,7 +384,7 @@ class RowOpTest(APITestBase):
         self.assert_equal(pks0, row.primary_key)
         self.assert_columns([('C1', 'blah')], row.attribute_columns)
                       
-        cu, next_pks, rows,token = self.client_test.get_range('AA', 'FORWARD', 
+        cu, next_pks, rows,token = self.client_test.get_range(table_name_a, 'FORWARD', 
                 [('PK1', INF_MIN), ('PK2', INF_MIN)], 
                 [('PK1', INF_MAX), ('PK2', INF_MAX)],
                 ['blah'],
@@ -570,7 +569,8 @@ class RowOpTest(APITestBase):
         old_cols = cols
         cols = []
         for k in old_cols:
-            cols.append((k[0], bytearray('V' * 8)))
+            value = bytearray('VVV'.encode('utf-8'))
+            cols.append((k[0], value))
         cu,rrow = self.client_test.put_row(table_name, Row(pks, cols), Condition(RowExistenceExpectation.IGNORE))
         cu, rrow, token = self.client_test.get_row(table_name, pks, max_version=1)
         self.assert_equal(rrow.primary_key, pks)
@@ -786,10 +786,10 @@ class RowOpTest(APITestBase):
             for i in range(remained_size / (restriction.MaxColumnNameLength + 1)):
                 bool_columns.append((col_key_tmp%i, False))
         #string
-        for i in range(remained_size / (restriction.MaxColumnNameLength + restriction.MaxNonPKStringValueLength)):
+        for i in range(int(remained_size / (restriction.MaxColumnNameLength + restriction.MaxNonPKStringValueLength))):
             string_columns.append((col_key_tmp%i, "X" * restriction.MaxNonPKStringValueLength))
         #binary
-        for i in range(remained_size / (restriction.MaxColumnNameLength + restriction.MaxBinaryValueLength)):
+        for i in range(int(remained_size / (restriction.MaxColumnNameLength + restriction.MaxBinaryValueLength))):
             binary_columns.append((col_key_tmp%i,  bytearray(restriction.MaxBinaryValueLength)))
         
         for col in [integer_columns, string_columns, bool_columns, binary_columns, double_columns]:

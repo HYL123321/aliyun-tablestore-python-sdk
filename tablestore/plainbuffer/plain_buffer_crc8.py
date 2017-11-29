@@ -1,6 +1,10 @@
 # -*- coding: utf8 -*-
 
 import sys
+import six
+import crcmod
+import struct
+from builtins import bytes
 
 CRC8_TABLE = [0x00, 0x07, 0x0e, 0x09, 0x1c, 0x1b, 0x12, 0x15,
               0x38, 0x3f, 0x36, 0x31, 0x24, 0x23, 0x2a, 0x2d,
@@ -35,6 +39,8 @@ CRC8_TABLE = [0x00, 0x07, 0x0e, 0x09, 0x1c, 0x1b, 0x12, 0x15,
               0xde, 0xd9, 0xd0, 0xd7, 0xc2, 0xc5, 0xcc, 0xcb,
               0xe6, 0xe1, 0xe8, 0xef, 0xfa, 0xfd, 0xf4, 0xf3]
 
+
+
 class PlainBufferCrc8(object):
     @staticmethod
     def update(crc, bytes_):
@@ -42,12 +48,15 @@ class PlainBufferCrc8(object):
 
     @staticmethod
     def _update(crc, bytes_):
-        if isinstance(bytes_, unicode):
-            bytes_ = bytes_.encode()
-        elif not isinstance(bytes_, str):
+        if isinstance(bytes_, six.text_type):
+            bytes_ = bytes_.encode('utf-8')
+        elif not isinstance(bytes_, six.binary_type):
             raise TypeError("must be string or buffer, actual:" + str(type(bytes_)))
-        for byte in bytes_:            
-            crc = CRC8_TABLE[((crc&0xff)^ord(byte))]
+        crc8Checker = crcmod.predefined.Crc('crc-8')
+        crc = crc8Checker._crc(bytes_, crc = crc)
+        #for byte in bytes_:
+        #    crc = CRC8_TABLE[((crc&0xff)^ord(byte))]
+        
         return crc
 
     @staticmethod
@@ -56,7 +65,10 @@ class PlainBufferCrc8(object):
 
     @staticmethod
     def crc_int8(crc, byte):
-        return CRC8_TABLE[((crc & 0xff)^byte)]
+        # return CRC8_TABLE[((crc & 0xff)^byte)]
+        crcChecker = crcmod.predefined.Crc('crc-8')
+        crc = crcChecker._crc(bytes([byte]), crc = crc)
+        return crc
 
     @staticmethod
     def crc_int32(crc, byte):
@@ -66,8 +78,10 @@ class PlainBufferCrc8(object):
 
     @staticmethod
     def crc_int64(crc, byte):
-        for i in range(0, 8):
-            crc = PlainBufferCrc8.crc_int8(crc, (byte>>(i*8)) & 0xff)
+        # for i in range(0, 8):
+        #     crc = PlainBufferCrc8.crc_int8(crc, (byte>>(i*8)) & 0xff)
+        crcChecker = crcmod.predefined.Crc('crc-8')
+        crc=crcChecker._crc(struct.pack('q', byte), crc=crc)
         return crc
 
 

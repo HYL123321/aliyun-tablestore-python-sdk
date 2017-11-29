@@ -3,7 +3,7 @@
 
 import logging
 import unittest
-import exceptions
+from builtins import range
 
 from tablestore.client import *
 from tablestore.metadata import *
@@ -340,7 +340,8 @@ class SDKParamTest(unittest.TestCase):
 
         try:
             iter = self.client.xget_range('one', 'two', 'three', 'four', 'five', 'six', 'seven')
-            iter.next()
+            #iter.next()
+            next(iter)
             self.assertTrue(False)
         except OTSClientError:
             pass
@@ -356,19 +357,19 @@ class SDKParamTest(unittest.TestCase):
         try:
             cond = Condition('errr')
             self.assertTrue(False)
-        except OTSClientError, e:
+        except OTSClientError as e:
             self.assertEqual("Expect input row_existence_expectation should be one of ['RowExistenceExpectation.IGNORE', 'RowExistenceExpectation.EXPECT_EXIST', 'RowExistenceExpectation.EXPECT_NOT_EXIST'], but 'errr'", str(e))
 
         try:
             cond = Condition(RowExistenceExpectation.IGNORE, "")
             self.assertTrue(False)
-        except OTSClientError, e:
+        except OTSClientError as e:
             self.assertEqual("The input column_condition should be an instance of ColumnCondition, not str", str(e))
 
         try:
             cond = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("", "", ""))
             self.assertTrue(False)
-        except OTSClientError, e:
+        except OTSClientError as e:
             self.assertEqual("Expect input comparator should be one of ['ComparatorType.EQUAL', 'ComparatorType.NOT_EQUAL', 'ComparatorType.GREATER_THAN', 'ComparatorType.GREATER_EQUAL', 'ComparatorType.LESS_THAN', 'ComparatorType.LESS_EQUAL'], but ''", str(e))
 
 
@@ -391,13 +392,13 @@ class SDKParamTest(unittest.TestCase):
         try:
             cond = SingleColumnCondition("uid", 100, "")
             self.assertTrue(False)
-        except OTSClientError, e:
+        except OTSClientError as e:
             self.assertEqual("Expect input comparator should be one of ['ComparatorType.EQUAL', 'ComparatorType.NOT_EQUAL', 'ComparatorType.GREATER_THAN', 'ComparatorType.GREATER_EQUAL', 'ComparatorType.LESS_THAN', 'ComparatorType.LESS_EQUAL'], but ''", str(e))
        
         try:
             cond = SingleColumnCondition("uid", 100, ComparatorType.LESS_EQUAL, "True")
             self.assertTrue(False)
-        except OTSClientError, e:
+        except OTSClientError as e:
             self.assertEqual("The input pass_if_missing should be an instance of Bool, not str", str(e))
        
 
@@ -409,7 +410,7 @@ class SDKParamTest(unittest.TestCase):
         try:
             cond = CompositeColumnCondition("")
             self.assertTrue(False)
-        except OTSClientError, e:
+        except OTSClientError as e:
             self.assertEqual("Expect input combinator should be one of ['LogicalOperator.NOT', 'LogicalOperator.AND', 'LogicalOperator.OR'], but ''", str(e))
  
 

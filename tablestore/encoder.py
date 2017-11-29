@@ -1,12 +1,14 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf8 -*-# 
 
+import six
+from builtins import int
 import google.protobuf.text_format as text_format
 
 from tablestore.error import *
 from tablestore.metadata import *
 from tablestore.plainbuffer.plain_buffer_builder import *
-import tablestore.protobuf.table_store_pb2 as pb2
-import tablestore.protobuf.table_store_filter_pb2 as filter_pb2
+import tablestore.protobuf.table_store_pb as pb2
+import tablestore.protobuf.table_store_filter_pb as filter_pb2
 
 INT32_MAX = 2147483647
 INT32_MIN = -2147483648
@@ -73,9 +75,9 @@ class OTSProtoBufferEncoder(object):
         }
 
     def _get_unicode(self, value):
-        if isinstance(value, str):
+        if isinstance(value, six.binary_type):
             return value.decode(self.encoding)
-        elif isinstance(value, unicode):
+        elif isinstance(value, six.text_type):
             return value
         else:
             raise OTSClientError(
@@ -84,7 +86,7 @@ class OTSProtoBufferEncoder(object):
             )
 
     def _get_int32(self, int32):
-        if isinstance(int32, int) or isinstance(int32, long):
+        if isinstance(int32, int) or isinstance(int32, int):
             if int32 < INT32_MIN or int32 > INT32_MAX:
                 raise OTSClientError("%s exceeds the range of int32" % int32)
             return int32
@@ -112,14 +114,14 @@ class OTSProtoBufferEncoder(object):
         # you have to put 'int' under 'bool' in the switch case
         # because a bool is also a int !!!
 
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, six.text_type) or isinstance(value, six.text_type):
             string = self._get_unicode(value)
             proto.type = pb2.STRING
             proto.v_string = string
         elif isinstance(value, bool):
             proto.type = pb2.BOOLEAN
             proto.v_bool = value
-        elif isinstance(value, int) or isinstance(value, long):
+        elif isinstance(value, int) or isinstance(value, int):
             proto.type = pb2.INTEGER
             proto.v_int = value
         elif isinstance(value, float):
@@ -149,7 +151,7 @@ class OTSProtoBufferEncoder(object):
         else:
             raise OTSClientError(
                 "primary_key_option should be one of [%s], not %s" % (
-                    ", ".join(enum_map.keys()), str(option)
+                    ", ".join(list(enum_map.keys())), str(option)
                 )
             )
 
@@ -164,7 +166,7 @@ class OTSProtoBufferEncoder(object):
         else:
             raise OTSClientError(
                 "primary_key_type should be one of [%s], not %s" % (
-                    ", ".join(enum_map.keys()), str(type_str)
+                    ", ".join(list(enum_map.keys())), str(type_str)
                 )
             )
 
@@ -179,7 +181,7 @@ class OTSProtoBufferEncoder(object):
         if proto.combinator is None:
             raise OTSClientError(
                 "LogicalOperator should be one of [%s], not %s" % (
-                    ", ".join(enum_map.keys()), str(condition.combinator)
+                    ", ".join(list(enum_map.keys())), str(condition.combinator)
                 )
             )
 
@@ -199,13 +201,13 @@ class OTSProtoBufferEncoder(object):
         if proto.comparator is None: 
             raise OTSClientError(
                 "ComparatorType should be one of [%s], not %s" % (
-                    ", ".join(enum_map.keys()), str(condition.comparator)
+                    ", ".join(list(enum_map.keys())), str(condition.comparator)
                 )
             )
 
         proto.column_name = self._get_unicode(condition.column_name)
         #self._make_column_value(proto.column_value, condition.column_value)
-        proto.column_value = str(PlainBufferBuilder.serialize_column_value(condition.column_value))
+        proto.column_value = bytes(PlainBufferBuilder.serialize_column_value(condition.column_value))
         proto.filter_if_missing = not condition.pass_if_missing 
         proto.latest_version_only = condition.latest_version_only
 
@@ -229,7 +231,7 @@ class OTSProtoBufferEncoder(object):
         if proto.type is None:
             raise OTSClientError(
                 "column_condition_type should be one of [%s], not %s" % (
-                    ", ".join(enum_map.keys()), str(column_condition.type)
+                    ", ".join(list(enum_map.keys())), str(column_condition.type)
                 )
             )
 
@@ -261,7 +263,7 @@ class OTSProtoBufferEncoder(object):
         if proto.row_existence is None:
             raise OTSClientError(
                 "row_existence_expectation should be one of [%s], not %s" % (
-                    ", ".join(enum_map.keys()), str(expectation_str)
+                    ", ".join(list(enum_map.keys())), str(expectation_str)
                 )
             )
 
@@ -280,7 +282,7 @@ class OTSProtoBufferEncoder(object):
         else:
             raise OTSClientError(
                 "direction should be one of [%s], not %s" % (
-                    ", ".join(enum_map.keys()), str(direction_str)
+                    ", ".join(list(enum_map.keys())), str(direction_str)
                 )
             )
 
@@ -302,7 +304,7 @@ class OTSProtoBufferEncoder(object):
             self._make_column_schema(schema_proto, schema_tuple)
 
     def _make_columns_with_dict(self, proto, column_dict):
-        for name, value in column_dict.iteritems():
+        for name, value in column_dict.items():
             item = proto.add()
             item.name = self._get_unicode(name)
             self._make_column_value(item.value, value)
@@ -316,7 +318,7 @@ class OTSProtoBufferEncoder(object):
                 )
             )
 
-        for key, value in column_dict.iteritems():
+        for key, value in column_dict.items():
             if key == 'put':
                 if not isinstance(column_dict[key], dict):
                     raise OTSClientError(
@@ -324,7 +326,7 @@ class OTSProtoBufferEncoder(object):
                             column_dict[key].__class__.__name__
                         )
                     )
-                for name, value in column_dict[key].iteritems():
+                for name, value in column_dict[key].items():
                     item = proto.add()
                     item.type = pb2.PUT
                     item.name = self._get_unicode(name)
@@ -420,7 +422,7 @@ class OTSProtoBufferEncoder(object):
         self._make_update_capacity_unit(proto.capacity_unit, reserved_throughput.capacity_unit)
 
     def _make_batch_get_row_internal(self, proto, request):
-        for table_name, item in request.items.items():
+        for table_name, item in list(request.items.items()):
             table_item = proto.tables.add()
             table_item.table_name = self._get_unicode(item.table_name)
             self._make_repeated_column_names(table_item.columns_to_get, item.columns_to_get)
@@ -431,7 +433,7 @@ class OTSProtoBufferEncoder(object):
                 table_item.filter = pb_filter.SerializeToString()
 
             for pk in item.primary_keys:
-                table_item.primary_key.append(str(PlainBufferBuilder.serialize_primary_key(pk)))
+                table_item.primary_key.append(bytes(PlainBufferBuilder.serialize_primary_key(pk)))
             if item.token is not None:
                 for token in item.token:
                     table_item.token.append(token)
@@ -442,7 +444,7 @@ class OTSProtoBufferEncoder(object):
                 if isinstance(item.time_range, tuple):
                     table_item.time_range.start_time = item.time_range[0]
                     table_item.time_range.end_time = item.time_range[1]
-                elif isinstance(item.time_range, int) or isinstance(item.time_range, long):
+                elif isinstance(item.time_range, int) or isinstance(item.time_range, int):
                     table_item.time_range.specific_time = item.time_range
 
             if item.start_column is not None:
@@ -464,7 +466,7 @@ class OTSProtoBufferEncoder(object):
         if put_row_item.return_type == ReturnType.RT_PK:
             proto.return_content.return_type = pb2.RT_PK
 
-        proto.row_change = str(PlainBufferBuilder.serialize_for_put_row(
+        proto.row_change = bytes(PlainBufferBuilder.serialize_for_put_row(
                 put_row_item.row.primary_key, put_row_item.row.attribute_columns))
         proto.type = pb2.PUT
         return proto
@@ -478,7 +480,7 @@ class OTSProtoBufferEncoder(object):
         if update_row_item.return_type == ReturnType.RT_PK:
             proto.return_content.return_type = pb2.RT_PK
 
-        proto.row_change = str(PlainBufferBuilder.serialize_for_update_row(
+        proto.row_change = bytes(PlainBufferBuilder.serialize_for_update_row(
                 update_row_item.row.primary_key, update_row_item.row.attribute_columns))
         proto.type = pb2.UPDATE
         return proto
@@ -492,12 +494,12 @@ class OTSProtoBufferEncoder(object):
         if delete_row_item.return_type == ReturnType.RT_PK:
             proto.return_content.return_type = pb2.RT_PK
 
-        proto.row_change = str(PlainBufferBuilder.serialize_for_delete_row(delete_row_item.row.primary_key))
+        proto.row_change = bytes(PlainBufferBuilder.serialize_for_delete_row(delete_row_item.row.primary_key))
         proto.type = pb2.DELETE
         return proto
 
     def _make_batch_write_row_internal(self, proto, request):
-        for table_name, item in request.items.items():
+        for table_name, item in list(request.items.items()):
             table_item = proto.tables.add()
             table_item.table_name = self._get_unicode(item.table_name)
 
@@ -561,14 +563,14 @@ class OTSProtoBufferEncoder(object):
             self._make_column_condition(pb_filter, column_filter)
             proto.filter = pb_filter.SerializeToString()
 
-        proto.primary_key = str(PlainBufferBuilder.serialize_primary_key(primary_key))
+        proto.primary_key = bytes(PlainBufferBuilder.serialize_primary_key(primary_key))
         if max_version is not None:
             proto.max_versions = max_version
         if time_range is not None:
             if isinstance(time_range, tuple):
                 proto.time_range.start_time = time_range[0]
                 proto.time_range.end_time = time_range[1]
-            elif isinstance(time_range, int) or isinstance(time_range, long):
+            elif isinstance(time_range, int) or isinstance(time_range, int):
                 proto.time_range.specific_time = time_range
 
         if start_column is not None:
@@ -589,7 +591,7 @@ class OTSProtoBufferEncoder(object):
         if return_type == ReturnType.RT_PK:
             proto.return_content.return_type = pb2.RT_PK
 
-        proto.row = str(PlainBufferBuilder.serialize_for_put_row(row.primary_key, row.attribute_columns))
+        proto.row = bytes(PlainBufferBuilder.serialize_for_put_row(row.primary_key, row.attribute_columns))
         return proto
 
     def _encode_update_row(self, table_name, row, condition, return_type):
@@ -602,7 +604,7 @@ class OTSProtoBufferEncoder(object):
         if return_type == ReturnType.RT_PK:
             proto.return_content.return_type = pb2.RT_PK
 
-        proto.row_change = str(PlainBufferBuilder.serialize_for_update_row(row.primary_key, row.attribute_columns))
+        proto.row_change = bytes(PlainBufferBuilder.serialize_for_update_row(row.primary_key, row.attribute_columns))
         return proto
 
     def _encode_delete_row(self, table_name, row, condition, return_type):
@@ -615,7 +617,7 @@ class OTSProtoBufferEncoder(object):
         if return_type == ReturnType.RT_PK:
             proto.return_content.return_type = pb2.RT_PK
 
-        proto.primary_key = str(PlainBufferBuilder.serialize_for_delete_row(row.primary_key))
+        proto.primary_key = bytes(PlainBufferBuilder.serialize_for_delete_row(row.primary_key))
         return proto
 
     def _encode_batch_get_row(self, request):
@@ -638,8 +640,8 @@ class OTSProtoBufferEncoder(object):
         proto.direction = self._get_direction(direction)
         self._make_repeated_column_names(proto.columns_to_get, columns_to_get)
 
-        proto.inclusive_start_primary_key = str(PlainBufferBuilder.serialize_primary_key(inclusive_start_primary_key))
-        proto.exclusive_end_primary_key = str(PlainBufferBuilder.serialize_primary_key(exclusive_end_primary_key))
+        proto.inclusive_start_primary_key = bytes(PlainBufferBuilder.serialize_primary_key(inclusive_start_primary_key))
+        proto.exclusive_end_primary_key = bytes(PlainBufferBuilder.serialize_primary_key(exclusive_end_primary_key))
 
         if column_filter is not None:
             pb_filter = filter_pb2.Filter()
@@ -654,7 +656,7 @@ class OTSProtoBufferEncoder(object):
             if isinstance(time_range, tuple):
                 proto.time_range.start_time = time_range[0]
                 proto.time_range.end_time = time_range[1]
-            elif isinstance(time_range, int) or isinstance(time_range, long):
+            elif isinstance(time_range, int) or isinstance(time_range, int):
                 proto.time_range.specific_time = time_range 
         if start_column is not None:
             proto.start_column = start_column

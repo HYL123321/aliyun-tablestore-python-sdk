@@ -9,13 +9,13 @@ import time
 import logging
 
 class FilterAndConditionUpdateTest(APITestBase):
-    TABLE_NAME = "test_filter_and_condition_update" + self.get_python_version()
+    TABLE_NAME = "test_filter_and_condition_update"
 
     """ConditionUpdate"""
 
     def test_update_row(self):
         """调用UpdateRow API, 构造不同的Condition"""
-        table_name = FilterAndConditionUpdateTest.TABLE_NAME
+        table_name = FilterAndConditionUpdateTest.TABLE_NAME + self.get_python_version()
         table_meta = TableMeta(table_name, [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
         table_options = TableOptions()
         reserved_throughput = ReservedThroughput(CapacityUnit(0, 0))
@@ -39,7 +39,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 1, ComparatorType.EQUAL))
             self.client_test.update_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index = 0时，期望写入成功
@@ -51,7 +51,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("addr", "china", ComparatorType.EQUAL, False))
             self.client_test.update_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 再次注入一行，条件是addr = china时，同时设置如果列不存在则不检查，期望写入失败
@@ -65,7 +65,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 0, ComparatorType.NOT_EQUAL))
             self.client_test.update_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index != 1时，期望写入成功
@@ -79,7 +79,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 0, ComparatorType.GREATER_THAN))
             self.client_test.update_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index > -1时，期望写入成功
@@ -93,7 +93,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 1, ComparatorType.GREATER_EQUAL))
             self.client_test.update_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index >= 0时，期望写入成功
@@ -107,7 +107,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 0, ComparatorType.LESS_THAN))
             self.client_test.update_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index < 1 时，期望写入成功
@@ -121,7 +121,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", -1, ComparatorType.LESS_EQUAL))
             self.client_test.update_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index <= 0 时，期望写入成功
@@ -146,7 +146,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, cond)
             self.client_test.update_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index == 0 & addr == china 时，期望写入成功
@@ -169,7 +169,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, cond)
             self.client_test.update_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是!(index != 0 & addr == china) 时，期望写入成功
@@ -194,7 +194,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, cond)
             self.client_test.update_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index == 0 or addr != china 时，期望写入成功
@@ -206,7 +206,7 @@ class FilterAndConditionUpdateTest(APITestBase):
 
     def test_put_row(self):
         """调用PutRow API, 构造不同的Condition"""
-        table_name = FilterAndConditionUpdateTest.TABLE_NAME
+        table_name = FilterAndConditionUpdateTest.TABLE_NAME + self.get_python_version()
         table_meta = TableMeta(table_name, [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
         table_options = TableOptions()
         reserved_throughput = ReservedThroughput(CapacityUnit(0, 0))
@@ -229,7 +229,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 1, ComparatorType.EQUAL))
             self.client_test.put_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index = 0时，期望写入成功
@@ -241,7 +241,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("addr", "china", ComparatorType.EQUAL, False))
             self.client_test.put_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 再次注入一行，条件是addr = china时，同时设置如果列不存在则不检查，期望写入失败
@@ -255,7 +255,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 0, ComparatorType.NOT_EQUAL))
             self.client_test.put_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index != 1时，期望写入成功
@@ -269,7 +269,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 0, ComparatorType.GREATER_THAN))
             self.client_test.put_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index > -1时，期望写入成功
@@ -283,7 +283,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 1, ComparatorType.GREATER_EQUAL))
             self.client_test.put_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index >= 0时，期望写入成功
@@ -297,7 +297,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 0, ComparatorType.LESS_THAN))
             self.client_test.put_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index < 1 时，期望写入成功
@@ -311,7 +311,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", -1, ComparatorType.LESS_EQUAL))
             self.client_test.put_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index <= 0 时，期望写入成功
@@ -334,7 +334,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, cond)
             self.client_test.put_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index == 0 & addr == china 时，期望写入成功
@@ -357,7 +357,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, cond)
             self.client_test.put_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是!(index != 0 & addr == china) 时，期望写入成功
@@ -382,7 +382,7 @@ class FilterAndConditionUpdateTest(APITestBase):
             condition = Condition(RowExistenceExpectation.IGNORE, cond)
             self.client_test.put_row(table_name, row, condition)
             self.assertTrue(False)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         # 注入一行，条件是index == 0 or addr != china 时，期望写入成功
@@ -402,13 +402,13 @@ class FilterAndConditionUpdateTest(APITestBase):
                          SingleColumnCondition("age", 99, ComparatorType.EQUAL, pass_if_missing = False))
         try:
             self.client_test.put_row(table_name, row, cond)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.") 
 
 
     def test_get_row(self):
         """调用GetRow API, 构造不同的Condition"""
-        table_name = FilterAndConditionUpdateTest.TABLE_NAME
+        table_name = FilterAndConditionUpdateTest.TABLE_NAME + self.get_python_version()
         table_meta = TableMeta(table_name, [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
         table_options = TableOptions()
         reserved_throughput = ReservedThroughput(CapacityUnit(0, 0))
@@ -525,7 +525,7 @@ class FilterAndConditionUpdateTest(APITestBase):
 
     def test_delete_row(self):
         """调用DeleteRow API, 构造不同的Condition"""
-        table_name = FilterAndConditionUpdateTest.TABLE_NAME
+        table_name = FilterAndConditionUpdateTest.TABLE_NAME  + self.get_python_version()
         table_meta = TableMeta(table_name, [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
         table_options = TableOptions()
         reserved_throughput = ReservedThroughput(CapacityUnit(0, 0))
@@ -547,7 +547,7 @@ class FilterAndConditionUpdateTest(APITestBase):
 
         try:
             self.client_test.delete_row(table_name, row, condition)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
             self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
 
@@ -558,7 +558,7 @@ class FilterAndConditionUpdateTest(APITestBase):
         condition = Condition(RowExistenceExpectation.IGNORE, cond)
         try:
              self.client_test.delete_row(table_name, row, condition)
-        except OTSServiceError, e:
+        except OTSServiceError as e:
              self.assert_error(e, 403, "OTSConditionCheckFail", "Condition check failed.")
 
         cond = CompositeColumnCondition(LogicalOperator.OR)
@@ -571,12 +571,14 @@ class FilterAndConditionUpdateTest(APITestBase):
 
     def test_batch_write_row(self): 
         """调用BatchWriteRow API, 构造不同的Condition"""
-        table_meta = TableMeta('myTable0', [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
+        myTable0 = 'myTable0_' + self.get_python_version()
+        myTable1 = 'myTable1_' + self.get_python_version()
+        table_meta = TableMeta(myTable0, [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
         table_options = TableOptions()
         reserved_throughput = ReservedThroughput(CapacityUnit(0, 0))
         self.client_test.create_table(table_meta, table_options, reserved_throughput)
 
-        table_meta = TableMeta('myTable1', [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
+        table_meta = TableMeta(myTable1, [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
         reserved_throughput = ReservedThroughput(CapacityUnit(0, 0))
         self.client_test.create_table(table_meta, table_options, reserved_throughput)
 
@@ -586,37 +588,37 @@ class FilterAndConditionUpdateTest(APITestBase):
         attribute_columns = [('index',0), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable0', row, condition)
+        self.client_test.put_row(myTable0, row, condition)
 
         primary_key = [('gid',0), ('uid',1)]
         attribute_columns = [('index',1), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable0', row, condition)
+        self.client_test.put_row(myTable0, row, condition)
 
         primary_key = [('gid',0), ('uid',2)]
         attribute_columns = [('index',2), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable0', row, condition)
+        self.client_test.put_row(myTable0, row, condition)
 
         primary_key = [('gid',0), ('uid',3)]
         attribute_columns = [('index',3), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable1', row, condition)
+        self.client_test.put_row(myTable1, row, condition)
 
         primary_key = [('gid',0), ('uid',4)]
         attribute_columns = [('index',4), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable1', row, condition)
+        self.client_test.put_row(myTable1, row, condition)
 
         primary_key = [('gid',0), ('uid',5)]
         attribute_columns = [('index',5), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable1', row, condition)
+        self.client_test.put_row(myTable1, row, condition)
 
 
         # put
@@ -637,15 +639,15 @@ class FilterAndConditionUpdateTest(APITestBase):
             Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 2, ComparatorType.EQUAL))))
 
         batch_list = BatchWriteRowRequest()
-        batch_list.add(TableInBatchWriteRowItem('myTable0', put_row_items))
-        batch_list.add(TableInBatchWriteRowItem('myTable1', put_row_items))
+        batch_list.add(TableInBatchWriteRowItem(myTable0, put_row_items))
+        batch_list.add(TableInBatchWriteRowItem(myTable1, put_row_items))
 
         result = self.client_test.batch_write_row(batch_list)
 
         self.assertEqual(True, result.is_all_succeed())
 
-        r0 = result.get_put_by_table('myTable0')
-        r1 = result.get_put_by_table('myTable1')
+        r0 = result.get_put_by_table(myTable0)
+        r1 = result.get_put_by_table(myTable1)
 
 
         self.assertEqual(3, len(r0))
@@ -690,15 +692,15 @@ class FilterAndConditionUpdateTest(APITestBase):
 
 
         batch_list = BatchWriteRowRequest()
-        batch_list.add(TableInBatchWriteRowItem('myTable0', update_row_items))
-        batch_list.add(TableInBatchWriteRowItem('myTable1', update_row_items))
+        batch_list.add(TableInBatchWriteRowItem(myTable0, update_row_items))
+        batch_list.add(TableInBatchWriteRowItem(myTable1, update_row_items))
 
         result = self.client_test.batch_write_row(batch_list)
 
         self.assertEqual(False, result.is_all_succeed())
 
-        r0 = result.get_update_by_table('myTable0')
-        r1 = result.get_update_by_table('myTable1')
+        r0 = result.get_update_by_table(myTable0)
+        r1 = result.get_update_by_table(myTable1)
 
         self.assertEqual(3, len(r0))
         self.assertEqual(3, len(r1))
@@ -732,15 +734,15 @@ class FilterAndConditionUpdateTest(APITestBase):
             Condition(RowExistenceExpectation.IGNORE, SingleColumnCondition("index", 5, ComparatorType.EQUAL, False))))
 
         batch_list = BatchWriteRowRequest()
-        batch_list.add(TableInBatchWriteRowItem('myTable0', delete_row_items))
-        batch_list.add(TableInBatchWriteRowItem('myTable1', delete_row_items))
+        batch_list.add(TableInBatchWriteRowItem(myTable0, delete_row_items))
+        batch_list.add(TableInBatchWriteRowItem(myTable1, delete_row_items))
 
         result = self.client_test.batch_write_row(batch_list)
 
         self.assertEqual(False, result.is_all_succeed())
 
-        r0 = result.get_delete_by_table('myTable0')
-        r1 = result.get_delete_by_table('myTable1')
+        r0 = result.get_delete_by_table(myTable0)
+        r1 = result.get_delete_by_table(myTable1)
 
         self.assertEqual(3, len(r0))
         self.assertEqual(3, len(r1))
@@ -760,12 +762,14 @@ class FilterAndConditionUpdateTest(APITestBase):
        
     def test_batch_get_row(self):
         """调用BatchGetRow API, 构造不同的Condition"""
-        table_meta = TableMeta('myTable0', [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
+        myTable0 = 'myTable0_' + self.get_python_version()
+        myTable1 = 'myTable1_' + self.get_python_version()
+        table_meta = TableMeta(myTable0, [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
         table_options = TableOptions()
         reserved_throughput = ReservedThroughput(CapacityUnit(0, 0))
         self.client_test.create_table(table_meta, table_options, reserved_throughput)
 
-        table_meta = TableMeta('myTable1', [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
+        table_meta = TableMeta(myTable1, [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
         table_options = TableOptions()
         reserved_throughput = ReservedThroughput(CapacityUnit(0, 0))
         self.client_test.create_table(table_meta, table_options, reserved_throughput)
@@ -776,37 +780,37 @@ class FilterAndConditionUpdateTest(APITestBase):
         attribute_columns = [('index',0), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable0', row, condition)
+        self.client_test.put_row(myTable0, row, condition)
 
         primary_key = [('gid',0), ('uid',1)]
         attribute_columns = [('index',1), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable0', row, condition)
+        self.client_test.put_row(myTable0, row, condition)
 
         primary_key = [('gid',0), ('uid',2)]
         attribute_columns = [('index',2), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable0', row, condition)
+        self.client_test.put_row(myTable0, row, condition)
 
         primary_key = [('gid',0), ('uid',0)]
         attribute_columns = [('index',0), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable1', row, condition)
+        self.client_test.put_row(myTable1, row, condition)
 
         primary_key = [('gid',1), ('uid',0)]
         attribute_columns = [('index',1), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable1', row, condition)
+        self.client_test.put_row(myTable1, row, condition)
 
         primary_key = [('gid',2), ('uid',0)]
         attribute_columns = [('index',2), ('addr','china')]
         row = Row(primary_key, attribute_columns)
         condition = Condition(RowExistenceExpectation.IGNORE)
-        self.client_test.put_row('myTable1', row, condition)
+        self.client_test.put_row(myTable1, row, condition)
 
 
         ## COMPOSITE_CONDITION
@@ -824,17 +828,17 @@ class FilterAndConditionUpdateTest(APITestBase):
         primary_keys.append([('gid',0), ('uid',0)])
         primary_keys.append([('gid',0), ('uid',1)])
         primary_keys.append([('gid',0), ('uid',2)])
-        batch_list.add(TableInBatchGetRowItem('myTable0', primary_keys, column_to_get, cond, 1))
+        batch_list.add(TableInBatchGetRowItem(myTable0, primary_keys, column_to_get, cond, 1))
 
         primary_keys = []
         primary_keys.append([('gid',0), ('uid',0)])
         primary_keys.append([('gid',1), ('uid',0)])
         primary_keys.append([('gid',2), ('uid',0)])
-        batch_list.add(TableInBatchGetRowItem('myTable1', primary_keys, column_to_get, cond, 1))
+        batch_list.add(TableInBatchGetRowItem(myTable1, primary_keys, column_to_get, cond, 1))
 
         result = self.client_test.batch_get_row(batch_list)
-        table0 = result.get_result_by_table('myTable0')
-        table1 = result.get_result_by_table('myTable1')
+        table0 = result.get_result_by_table(myTable0)
+        table1 = result.get_result_by_table(myTable1)
 
         self.assertEqual(6, len(result.get_succeed_rows()))
         self.assertEqual(0, len(result.get_failed_rows()))
@@ -875,13 +879,13 @@ class FilterAndConditionUpdateTest(APITestBase):
         primary_keys.append([('gid',0), ('uid',0)])
         primary_keys.append([('gid',0), ('uid',1)])
         primary_keys.append([('gid',0), ('uid',2)])
-        batch_list.add(TableInBatchGetRowItem('myTable0', primary_keys, column_to_get, cond, 1))
+        batch_list.add(TableInBatchGetRowItem(myTable0, primary_keys, column_to_get, cond, 1))
 
         primary_keys = []
         primary_keys.append([('gid',0), ('uid',0)])
         primary_keys.append([('gid',1), ('uid',0)])
         primary_keys.append([('gid',2), ('uid',0)])
-        batch_list.add(TableInBatchGetRowItem('myTable1', primary_keys, column_to_get, cond, 1))
+        batch_list.add(TableInBatchGetRowItem(myTable1, primary_keys, column_to_get, cond, 1))
 
         result = self.client_test.batch_get_row(batch_list)
 
@@ -890,8 +894,8 @@ class FilterAndConditionUpdateTest(APITestBase):
 
         self.assertEqual(True, result.is_all_succeed())
 
-        table0 = result.get_result_by_table('myTable0')
-        table1 = result.get_result_by_table('myTable1')
+        table0 = result.get_result_by_table(myTable0)
+        table1 = result.get_result_by_table(myTable1)
 
         self.assertEqual(3, len(table0))
         self.assertEqual(3, len(table1))
@@ -923,7 +927,7 @@ class FilterAndConditionUpdateTest(APITestBase):
 
     def test_get_range(self):
         """调用GetRange API, 构造不同的Condition"""
-        table_name = FilterAndConditionUpdateTest.TABLE_NAME
+        table_name = FilterAndConditionUpdateTest.TABLE_NAME + self.get_python_version()
         table_meta = TableMeta(table_name, [('gid', ColumnType.INTEGER), ('uid', ColumnType.INTEGER)])
         table_options = TableOptions()
         reserved_throughput = ReservedThroughput(CapacityUnit(0, 0))

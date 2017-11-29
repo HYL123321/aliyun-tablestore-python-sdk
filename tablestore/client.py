@@ -4,17 +4,22 @@
 __all__ = ['OTSClient']
 
 import sys
+import six
 import time
 import _strptime
 
 import logging
-from tablestore.compact import urlparse 
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass
+
+try:
+    import urlparse 
+except ImportError:
+    import urllib.parse as urlparse
 
 from tablestore.error import *
 from tablestore.protocol import OTSProtocol
@@ -84,7 +89,7 @@ class OTSClient(object):
             self.max_connection = OTSClient.DEFAULT_MAX_CONNECTION
 
         # initialize logger
-        logger_name = kwargs.get('logger_name')
+        logger_name = self._encode(kwargs.get('logger_name'))
         if logger_name is None:
             self.logger = logging.getLogger(OTSClient.DEFAULT_LOGGER_NAME)
             nullHandler = NullHandler()
@@ -93,7 +98,7 @@ class OTSClient(object):
             self.logger = logging.getLogger(logger_name)
 
         # parse end point
-        scheme, netloc, path = urlparse.urlparse(end_point)[:3]
+        scheme, netloc, path = urlparse.urlparse(self._encode(end_point))[:3]
         host = scheme + "://" + netloc
 
         if scheme != 'http' and scheme != 'https':
@@ -107,7 +112,11 @@ class OTSClient(object):
 
         # intialize protocol instance via user configuration
         self.protocol = self.protocol_class(
-            access_key_id, access_key_secret, instance_name, self.encoding, self.logger
+            self._encode(access_key_id), 
+            self._encode(access_key_secret), 
+            self._encode(instance_name), 
+            self.encoding, 
+            self.logger
         )
         
         # initialize connection via user configuration
@@ -120,6 +129,11 @@ class OTSClient(object):
         if retry_policy is None:
             retry_policy = DefaultRetryPolicy()
         self.retry_policy = retry_policy
+
+    def _encode(self, text):
+        if isinstance(text, six.text_type):
+            return text.encode(self.encoding)
+        return text
 
     def _request_helper(self, api_name, *args, **kwargs):
 

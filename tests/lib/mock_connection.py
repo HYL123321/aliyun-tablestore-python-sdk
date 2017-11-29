@@ -4,14 +4,18 @@ import time
 import hmac
 import hashlib
 import base64
-import urlparse
+
+try:
+    import urlparse 
+except ImportError:
+    import urllib.parse as urlparse
 
 import google.protobuf.text_format as text_format
 
 from tablestore import * 
 from tablestore.metadata import *
 from tablestore.error import *
-import tablestore.protobuf.table_store_pb2 as pb2
+import tablestore.protobuf.table_store_pb as pb2
 
 
 class MockConnection(object):

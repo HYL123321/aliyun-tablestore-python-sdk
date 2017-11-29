@@ -4,8 +4,9 @@ import google.protobuf.text_format as text_format
 
 from tablestore.metadata import *
 from tablestore.plainbuffer.plain_buffer_builder import *
-import tablestore.protobuf.table_store_pb2 as pb2
-import tablestore.protobuf.table_store_filter_pb2 as filter_pb2
+
+import tablestore.protobuf.table_store_pb as pb
+import tablestore.protobuf.table_store_filter_pb as filter_pb
 
 class OTSProtoBufferDecoder(object):
 
@@ -35,9 +36,9 @@ class OTSProtoBufferDecoder(object):
 
     def _parse_column_type(self, column_type_enum):
         reverse_enum_map = {
-            pb2.INTEGER : 'INTEGER',
-            pb2.STRING  : 'STRING',
-            pb2.BINARY  : 'BINARY'
+            pb.INTEGER : 'INTEGER',
+            pb.STRING  : 'STRING',
+            pb.BINARY  : 'BINARY'
         }
         if column_type_enum in reverse_enum_map:
             return reverse_enum_map[column_type_enum]
@@ -46,7 +47,7 @@ class OTSProtoBufferDecoder(object):
 
     def _parse_column_option(self, column_option_enum):
         reverse_enum_map = {
-            pb2.AUTO_INCREMENT : PK_AUTO_INCR,
+            pb.AUTO_INCREMENT : PK_AUTO_INCR,
         }
         if column_option_enum in reverse_enum_map:
             return reverse_enum_map[column_option_enum]
@@ -54,15 +55,15 @@ class OTSProtoBufferDecoder(object):
             raise OTSClientError("invalid value for column option: %s" % str(column_option_enum))        
 
     def _parse_value(self, proto):
-        if proto.type == pb2.INTEGER:
+        if proto.type == pb.INTEGER:
             return proto.v_int
-        elif proto.type == pb2.STRING:
+        elif proto.type == pb.STRING:
             return proto.v_string
-        elif proto.type == pb2.BOOLEAN:
+        elif proto.type == pb.BOOLEAN:
             return proto.v_bool
-        elif proto.type == pb2.DOUBLE:
+        elif proto.type == pb.DOUBLE:
             return proto.v_double
-        elif proto.type == pb2.BINARY:
+        elif proto.type == pb.BINARY:
             return bytearray(proto.v_binary)
         else:
             raise OTSClientError("invalid column value type: %s" % str(proto.type))
@@ -198,23 +199,23 @@ class OTSProtoBufferDecoder(object):
         return result_list
 
     def _decode_create_table(self, body):
-        proto = pb2.CreateTableResponse()
+        proto = pb.CreateTableResponse()
         proto.ParseFromString(body)
         return None, proto
 
     def _decode_list_table(self, body):
-        proto = pb2.ListTableResponse()
+        proto = pb.ListTableResponse()
         proto.ParseFromString(body)
         names = tuple(proto.table_names)
         return names, proto
 
     def _decode_delete_table(self, body):
-        proto = pb2.DeleteTableResponse()
+        proto = pb.DeleteTableResponse()
         proto.ParseFromString(body)
         return None, proto
         
     def _decode_describe_table(self, body):
-        proto = pb2.DescribeTableResponse()
+        proto = pb.DescribeTableResponse()
         proto.ParseFromString(body)
 
         table_meta = TableMeta(
@@ -230,7 +231,7 @@ class OTSProtoBufferDecoder(object):
         return describe_table_response, proto
 
     def _decode_update_table(self, body):
-        proto = pb2.UpdateTableResponse()
+        proto = pb.UpdateTableResponse()
         proto.ParseFromString(body)
 
         reserved_throughput_details = self._parse_reserved_throughput_details(proto.reserved_throughput_details)
@@ -240,7 +241,7 @@ class OTSProtoBufferDecoder(object):
         return update_table_response, proto
 
     def _decode_get_row(self, body):
-        proto = pb2.GetRowResponse()
+        proto = pb.GetRowResponse()
         proto.ParseFromString(body)
 
         consumed = self._parse_capacity_unit(proto.consumed.capacity_unit)
@@ -257,7 +258,7 @@ class OTSProtoBufferDecoder(object):
         return (consumed, return_row, next_token), proto
 
     def _decode_put_row(self, body):
-        proto = pb2.PutRowResponse()
+        proto = pb.PutRowResponse()
         proto.ParseFromString(body)
 
         consumed = self._parse_capacity_unit(proto.consumed.capacity_unit)
@@ -273,7 +274,7 @@ class OTSProtoBufferDecoder(object):
         return (consumed, return_row), proto
 
     def _decode_update_row(self, body):
-        proto = pb2.UpdateRowResponse()
+        proto = pb.UpdateRowResponse()
         proto.ParseFromString(body)
 
         consumed = self._parse_capacity_unit(proto.consumed.capacity_unit)
@@ -289,7 +290,7 @@ class OTSProtoBufferDecoder(object):
         return (consumed, return_row), proto
 
     def _decode_delete_row(self, body):
-        proto = pb2.DeleteRowResponse()
+        proto = pb.DeleteRowResponse()
         proto.ParseFromString(body)
 
         consumed = self._parse_capacity_unit(proto.consumed.capacity_unit)
@@ -306,21 +307,21 @@ class OTSProtoBufferDecoder(object):
 
 
     def _decode_batch_get_row(self, body):
-        proto = pb2.BatchGetRowResponse()
+        proto = pb.BatchGetRowResponse()
         proto.ParseFromString(body)
 
         rows = self._parse_batch_get_row(proto.tables)
         return rows, proto
 
     def _decode_batch_write_row(self, body):
-        proto = pb2.BatchWriteRowResponse()
+        proto = pb.BatchWriteRowResponse()
         proto.ParseFromString(body)
 
         rows = self._parse_batch_write_row(proto.tables)
         return rows, proto
 
     def _decode_get_range(self, body):
-        proto = pb2.GetRangeResponse()
+        proto = pb.GetRangeResponse()
         proto.ParseFromString(body)
         
         capacity_unit = self._parse_capacity_unit(proto.consumed.capacity_unit)
