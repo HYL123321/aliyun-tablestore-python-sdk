@@ -233,8 +233,6 @@ class OTSProtocol(object):
             error_message = 'Response format is invalid, %s, RequestID: %s, " \
                 "HTTP status: %s, Body: %s.' % (str(e), request_id, status, body)
             self.logger.error(error_message)
-            import traceback
-            print(traceback.format_exc())
             raise OTSClientError(error_message, status)
 
         if self.logger.level <= logging.DEBUG:

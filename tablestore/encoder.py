@@ -85,7 +85,7 @@ class OTSProtoBufferEncoder(object):
             )
 
     def _get_int32(self, int32):
-        if isinstance(int32, int) or isinstance(int32, int):
+        if isinstance(int32, int):
             if int32 < INT32_MIN or int32 > INT32_MAX:
                 raise OTSClientError("%s exceeds the range of int32" % int32)
             return int32
@@ -120,7 +120,7 @@ class OTSProtoBufferEncoder(object):
         elif isinstance(value, bool):
             proto.type = pb2.BOOLEAN
             proto.v_bool = value
-        elif isinstance(value, int) or isinstance(value, int):
+        elif isinstance(value, int):
             proto.type = pb2.INTEGER
             proto.v_int = value
         elif isinstance(value, float):
@@ -654,7 +654,7 @@ class OTSProtoBufferEncoder(object):
             if isinstance(time_range, tuple):
                 proto.time_range.start_time = time_range[0]
                 proto.time_range.end_time = time_range[1]
-            elif isinstance(time_range, int) or isinstance(time_range, int):
+            elif isinstance(time_range, int):
                 proto.time_range.specific_time = time_range 
         if start_column is not None:
             proto.start_column = start_column
