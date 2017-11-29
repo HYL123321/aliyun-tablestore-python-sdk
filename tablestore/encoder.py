@@ -2,7 +2,6 @@
 
 import six
 from builtins import int
-import google.protobuf.text_format as text_format
 
 from tablestore.error import *
 from tablestore.metadata import *
@@ -206,8 +205,7 @@ class OTSProtoBufferEncoder(object):
             )
 
         proto.column_name = self._get_unicode(condition.column_name)
-        #self._make_column_value(proto.column_value, condition.column_value)
-        proto.column_value = bytes(PlainBufferBuilder.serialize_column_value(condition.column_value))
+                proto.column_value = bytes(PlainBufferBuilder.serialize_column_value(condition.column_value))
         proto.filter_if_missing = not condition.pass_if_missing 
         proto.latest_version_only = condition.latest_version_only
 

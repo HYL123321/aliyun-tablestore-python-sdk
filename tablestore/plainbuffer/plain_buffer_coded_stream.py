@@ -31,8 +31,7 @@ class PlainBufferCodedInputStream(object):
         if not self.check_last_tag_was(TAG_CELL_VALUE):
             raise OTSClientError("Expect TAG_CELL_VALUE but it was " + str(self.get_last_tag()))
 
-        self.input_stream.read_raw_little_endian32()
-        #column_type = ord(self.input_stream.read_raw_byte().decode('utf-8'))
+        self.input_stream.read_raw_little_endian32()        
         column_type = ord(self.input_stream.read_raw_byte())
         if column_type == VT_INTEGER:
             int64_value = self.input_stream.read_int64()
@@ -63,7 +62,6 @@ class PlainBufferCodedInputStream(object):
         if not self.check_last_tag_was(TAG_CELL_VALUE):
             raise OTSClientError("Expect TAG_CELL_VALUE but it was " + str(self.get_last_tag()))
         self.input_stream.read_raw_little_endian32()
-        #column_type = ord(self.input_stream.read_raw_byte().decode('utf-8'))
         column_type = ord(self.input_stream.read_raw_byte())
         if column_type == VT_INTEGER:
             int64_value = self.input_stream.read_int64()
@@ -98,7 +96,7 @@ class PlainBufferCodedInputStream(object):
             cell_check_sum = PlainBufferCrc8.crc_int8(cell_check_sum, VT_DOUBLE)
             cell_check_sum = PlainBufferCrc8.crc_int64(cell_check_sum, double_int)
             self.read_tag()
-            #long in 64bit system should be 8 bit long
+
             if const.SYS_BITS == 64:
                 double_value, = struct.unpack('d', struct.pack('q', double_int))
             elif const.SYS_BITS == 32:
@@ -129,7 +127,6 @@ class PlainBufferCodedInputStream(object):
         primary_key_value, cell_check_sum = self.read_primary_key_value(cell_check_sum)
         
         if self.get_last_tag() == TAG_CELL_CHECKSUM:
-            #check_sum = ord(self.input_stream.read_raw_byte().decode('utf-8'))
             check_sum = ord(self.input_stream.read_raw_byte())
             if check_sum != cell_check_sum:
                 raise OTSClientError("Checksum mismatch. expected:" + str(check_sum) + ",actual:" + str(cell_check_sum))
@@ -170,7 +167,6 @@ class PlainBufferCodedInputStream(object):
             self.read_tag()
 
         if self.get_last_tag() == TAG_CELL_CHECKSUM:
-            #check_sum = ord(self.input_stream.read_raw_byte().decode('utf-8'))
             check_sum = ord(self.input_stream.read_raw_byte())
             if check_sum != cell_check_sum:                
                 raise OTSClientError("Checksum mismatch. expected:" + str(check_sum) + ",actual:" + str(cell_check_sum))
@@ -193,20 +189,12 @@ class PlainBufferCodedInputStream(object):
         
         while self.check_last_tag_was(TAG_CELL):
             (name, value, row_check_sum) = self.read_primary_key_column(row_check_sum)
-#             if isinstance(name, six.binary_type):
-#                 name = name.decode('utf-8')
-#             if isinstance(value, six.binary_type):
-#                 value = value.decode('utf-8')
             primary_key.append((name, value))
 
         if self.check_last_tag_was(TAG_ROW_DATA):
             self.read_tag()
             while self.check_last_tag_was(TAG_CELL):
                 column_name, column_value, timestamp, row_check_sum = self.read_column(row_check_sum)
-#                 if isinstance(column_name, six.binary_type):
-#                     column_name = column_name.decode('utf-8')
-#                 if isinstance(column_value, six.binary_type):
-#                     column_value = column_value.decode('utf-8')
                 attributes.append((column_name, column_value, timestamp))
 
         if self.check_last_tag_was(TAG_DELETE_ROW_MARKER):
@@ -216,7 +204,6 @@ class PlainBufferCodedInputStream(object):
             row_check_sum = PlainBufferCrc8.crc_int8(row_check_sum, 0)
 
         if self.check_last_tag_was(TAG_ROW_CHECKSUM):
-            #check_sum = ord(self.input_stream.read_raw_byte().decode('utf-8'))
             check_sum = ord(self.input_stream.read_raw_byte())
             if check_sum != row_check_sum:
                 raise OTSClientError("Checksum is mismatch.")
@@ -256,7 +243,6 @@ class PlainBufferCodedOutputStream(object):
     def write_cell_name(self, name, cell_check_sum):
         self.write_tag(TAG_CELL_NAME)
         self.output_stream.write_raw_little_endian32(len(name))
-        #self.output_stream.write_raw_byte(name)
         self.output_stream.write_bytes(name)
         cell_check_sum = PlainBufferCrc8.crc_string(cell_check_sum, name)
         return cell_check_sum
@@ -293,7 +279,6 @@ class PlainBufferCodedOutputStream(object):
             self.output_stream.write_raw_little_endian32(len(string_value))
             self.output_stream.write_bytes(string_value)
             cell_check_sum = PlainBufferCrc8.crc_int8(cell_check_sum, VT_STRING)
-            #cell_check_sum = PlainBufferCrc8.crc_int32(cell_check_sum, len(string_value.encode('utf-8')))
             cell_check_sum = PlainBufferCrc8.crc_int32(cell_check_sum, len(string_value))
             cell_check_sum = PlainBufferCrc8.crc_string(cell_check_sum, string_value)
         elif isinstance(value, bytearray):
@@ -308,7 +293,6 @@ class PlainBufferCodedOutputStream(object):
             cell_check_sum = PlainBufferCrc8.crc_int8(cell_check_sum, VT_BLOB)
             cell_check_sum = PlainBufferCrc8.crc_int32(cell_check_sum, len(binary_value))
             cell_check_sum = PlainBufferCrc8.crc_string(cell_check_sum, binary_value.decode("utf-8"))
-            #cell_check_sum = PlainBufferCrc8.crc_string(cell_check_sum, binary_value) 
         else:
             raise OTSClientError("Unsupported primary key type: " + type(value)) 
         return cell_check_sum
@@ -339,8 +323,6 @@ class PlainBufferCodedOutputStream(object):
             self.output_stream.write_raw_little_endian32(len(value))
             self.output_stream.write_bytes(value)
             cell_check_sum = PlainBufferCrc8.crc_int8(cell_check_sum, VT_STRING)
-            #需要求的是bytes的长度
-            #cell_check_sum = PlainBufferCrc8.crc_int32(cell_check_sum, len(value.encode('utf-8')))
             cell_check_sum = PlainBufferCrc8.crc_int32(cell_check_sum, len(value))
             cell_check_sum = PlainBufferCrc8.crc_string(cell_check_sum, value)
         elif isinstance(value, bytearray):
@@ -352,9 +334,7 @@ class PlainBufferCodedOutputStream(object):
             cell_check_sum = PlainBufferCrc8.crc_int8(cell_check_sum, VT_BLOB)
             cell_check_sum = PlainBufferCrc8.crc_int32(cell_check_sum, len(value))
             cell_check_sum = PlainBufferCrc8.crc_string(cell_check_sum, value.decode("utf-8"))
-            #cell_check_sum = PlainBufferCrc8.crc_string(cell_check_sum, value)
         elif isinstance(value, float):
-            #in 64bit system  long shoud be 8 bytes,use the type of long long
             if const.SYS_BITS == 64:
                 double_in_long, = struct.unpack("q", struct.pack("d", value))
             elif const.SYS_BITS == 32:
@@ -381,7 +361,6 @@ class PlainBufferCodedOutputStream(object):
             if isinstance(value, six.text_type):
                 value = value.encode('utf-8')
             self.output_stream.write_raw_byte(VT_STRING)
-            #self.output_stream.write_raw_little_endian32(len(value.encode('utf-8')))
             self.output_stream.write_raw_little_endian32(len(value))
             self.output_stream.write_bytes(value)
         elif isinstance(value, bytearray):
@@ -412,7 +391,6 @@ class PlainBufferCodedOutputStream(object):
 
         if timestamp is not None:
             self.write_tag(TAG_CELL_TIMESTAMP)
-            #timestamp in 64bit system should be different from 32bit system TODO column could not add timestamp in the cell,it might be the 64 bit system of long type size
             self.output_stream.write_raw_little_endian64(timestamp)
             cell_check_sum = PlainBufferCrc8.crc_int64(cell_check_sum, timestamp)
         self.write_tag(TAG_CELL_CHECKSUM)

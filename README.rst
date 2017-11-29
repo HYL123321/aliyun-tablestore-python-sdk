@@ -100,7 +100,8 @@ Github安装
 
 贡献代码
 --------
-- 我们非常欢迎大家为TableStore Python SDK以及其他TableStore SDK贡献代码
+- 我们非常欢迎大家为TableStore Python SDK以及其他TableStore SDK贡献代码。
+- 感谢 [@Wall-ee](https://github.com/Wall-ee) 对 python3 支持的贡献。
 
 联系我们
 --------

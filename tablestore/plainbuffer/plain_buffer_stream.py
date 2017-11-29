@@ -20,15 +20,12 @@ class PlainBufferInputStream(object):
             return 0
 
         self.last_tag = self.read_raw_byte()
-        #return ord(self.last_tag.decode('utf-8'))
         return ord(self.last_tag)
 
     def check_last_tag_was(self, tag):
-        #return ord(self.last_tag.decode('utf-8')) == tag
         return ord(self.last_tag) == tag
 
     def get_last_tag(self):
-        #return ord(self.last_tag.decode('utf-8'))
         return ord(self.last_tag)
 
     def read_raw_byte(self):
@@ -37,7 +34,6 @@ class PlainBufferInputStream(object):
 
         pos = self.cur_pos
         self.cur_pos += 1
-        #return chr(self.buffer[pos]).encode('utf-8')
         if isinstance(self.buffer[pos], int):
             return chr(self.buffer[pos])
         else:
@@ -122,5 +118,3 @@ class PlainBufferOutputStream(object):
         if isinstance(value, six.text_type):
             value = value.encode('utf-8')
         self.buffer += bytearray(value)
-        # self.buffer.append(value)
-        # self.buffer += value

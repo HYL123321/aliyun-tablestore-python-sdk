@@ -60,6 +60,7 @@ class OTSProtocol(object):
         self.user_id = user_id
         self.user_key = user_key
         self.instance_name = instance_name
+        self.encoding = encoding
         self.encoder = self.encoder_class(encoding)
         self.decoder = self.decoder_class(encoding)
         self.logger = logger
@@ -72,7 +73,7 @@ class OTSProtocol(object):
         # The signature method is supposed to be HmacSHA1
         # A switch case is required if there is other methods available
         signature = base64.b64encode(hmac.new(
-            self.user_key.encode('utf-8'), signature_string.encode('utf-8'), hashlib.sha1
+            self.user_key.encode(self.encoding), signature_string.encode(self.encoding), hashlib.sha1
         ).digest())
         return signature
 
@@ -95,7 +96,7 @@ class OTSProtocol(object):
         # compose request headers and process request body if needed
 
         #decode the byte type md5 in order to fit the signature method
-        md5 = base64.b64encode(hashlib.md5(body).digest()).decode('utf-8')
+        md5 = base64.b64encode(hashlib.md5(body).digest()).decode(self.encoding)
 
 
         #date = datetime.datetime.utcnow().isoformat()
@@ -155,7 +156,7 @@ class OTSProtocol(object):
         # 2, check md5
         if 'x-ots-contentmd5' in headers:
             #have to decode the byte string inorder to fit the header
-            md5 = base64.b64encode(hashlib.md5(body).digest()).decode('utf-8')
+            md5 = base64.b64encode(hashlib.md5(body).digest()).decode(self.encoding)
             if md5 != headers['x-ots-contentmd5']:
                 raise OTSClientError('MD5 mismatch in response.')
 
@@ -191,7 +192,7 @@ class OTSProtocol(object):
 
         # 3, check signature
         # decode the byte type
-        if signature != self._make_response_signature(query, headers).decode('utf-8'):
+        if signature != self._make_response_signature(query, headers).decode(self.encoding):
             raise OTSClientError('Invalid signature in response.')
 
     def make_request(self, api_name, *args, **kwargs):
