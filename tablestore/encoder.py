@@ -205,7 +205,7 @@ class OTSProtoBufferEncoder(object):
             )
 
         proto.column_name = self._get_unicode(condition.column_name)
-                proto.column_value = bytes(PlainBufferBuilder.serialize_column_value(condition.column_value))
+        proto.column_value = bytes(PlainBufferBuilder.serialize_column_value(condition.column_value))
         proto.filter_if_missing = not condition.pass_if_missing 
         proto.latest_version_only = condition.latest_version_only
 
@@ -218,7 +218,7 @@ class OTSProtoBufferEncoder(object):
         if not isinstance(column_condition, ColumnCondition):
             raise OTSClientError(
                 "column condition should be an instance of ColumnCondition, not %s" %
-                condition.__class__.__name__
+                column_condition.__class__.__name__
             )
 
         # type
@@ -367,10 +367,29 @@ class OTSProtoBufferEncoder(object):
                 "table_option should be an instance of TableOptions, not %s" 
                 % table_options.__class__.__name__
             )
+        if table_options.time_to_live is not None:
+            if not isinstance(table_options.time_to_live, int):
+                raise OTSClientError(
+                    "time_to_live should be an instance of int, not %s" 
+                    % table_options.time_to_live.__class__.__name__
+                    )   
+            proto.time_to_live = table_options.time_to_live
 
-        proto.time_to_live = table_options.time_to_live
-        proto.max_versions = table_options.max_version
-        proto.deviation_cell_version_in_sec = table_options.max_time_deviation
+        if table_options.max_version is not None:
+            if not isinstance(table_options.max_version, int):
+                raise OTSClientError(
+                    "max_version should be an instance of int, not %s" 
+                    % table_options.max_version.__class__.__name__
+                    )   
+            proto.max_versions = table_options.max_version
+
+        if table_options.max_time_deviation is not None:
+            if not isinstance(table_options.max_time_deviation, int):
+                raise OTSClientError(
+                    "max_time_deviation should be an instance of TableOptions, not %s" 
+                    % table_options.max_time_deviation.__class__.__name__
+                    )   
+            proto.deviation_cell_version_in_sec = table_options.max_time_deviation
 
     def _make_capacity_unit(self, proto, capacity_unit):
 
@@ -541,8 +560,10 @@ class OTSProtoBufferEncoder(object):
     def _encode_update_table(self, table_name, table_options, reserved_throughput):
         proto = pb2.UpdateTableRequest()
         proto.table_name = self._get_unicode(table_name)
-        self._make_update_reserved_throughput(proto.reserved_throughput, reserved_throughput)
-        self._make_table_options(proto.table_options, table_options)
+        if reserved_throughput is not None:
+            self._make_update_reserved_throughput(proto.reserved_throughput, reserved_throughput)
+        if table_options is not None:
+            self._make_table_options(proto.table_options, table_options)
         return proto
 
     def _encode_describe_table(self, table_name):

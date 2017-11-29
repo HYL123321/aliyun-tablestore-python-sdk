@@ -58,6 +58,8 @@ class OTSClient(object):
 
         ``instance_name``是要访问的实例名，通过官方网站控制台创建或通过管理员获取。
 
+        ``sts_token``是访问OTS服务的STS token，从STS服务获取，具有有效期，过期后需要重新获取。
+
         ``encoding``请求参数的字符串编码类型，默认是utf8。
 
         ``socket_timeout``是连接池中每个连接的Socket超时，单位为秒，可以为int或float。默认值为50。
@@ -75,6 +77,8 @@ class OTSClient(object):
 
             client = OTSClient('your_instance_endpoint', 'your_user_id', 'your_user_key', 'your_instance_name')
         """
+        self._validate_parameter(end_point, access_key_id, access_key_secret, instance_name)
+        sts_token = kwargs.get('sts_token')
 
         self.encoding = kwargs.get('encoding')
         if self.encoding is None:
@@ -89,7 +93,7 @@ class OTSClient(object):
             self.max_connection = OTSClient.DEFAULT_MAX_CONNECTION
 
         # initialize logger
-        logger_name = self._encode(kwargs.get('logger_name'))
+        logger_name = kwargs.get('logger_name')
         if logger_name is None:
             self.logger = logging.getLogger(OTSClient.DEFAULT_LOGGER_NAME)
             nullHandler = NullHandler()
@@ -98,7 +102,7 @@ class OTSClient(object):
             self.logger = logging.getLogger(logger_name)
 
         # parse end point
-        scheme, netloc, path = urlparse.urlparse(self._encode(end_point))[:3]
+        scheme, netloc, path = urlparse.urlparse(end_point)[:3]
         host = scheme + "://" + netloc
 
         if scheme != 'http' and scheme != 'https':
@@ -112,9 +116,10 @@ class OTSClient(object):
 
         # intialize protocol instance via user configuration
         self.protocol = self.protocol_class(
-            self._encode(access_key_id), 
-            self._encode(access_key_secret), 
-            self._encode(instance_name), 
+            access_key_id,
+            access_key_secret, 
+            sts_token,
+            instance_name, 
             self.encoding, 
             self.logger
         )
@@ -129,11 +134,6 @@ class OTSClient(object):
         if retry_policy is None:
             retry_policy = DefaultRetryPolicy()
         self.retry_policy = retry_policy
-
-    def _encode(self, text):
-        if isinstance(text, six.text_type):
-            return text.encode(self.encoding)
-        return text
 
     def _request_helper(self, api_name, *args, **kwargs):
 
@@ -217,7 +217,7 @@ class OTSClient(object):
 
         return self._request_helper('ListTable')
 
-    def update_table(self, table_name, table_options, reserved_throughput):
+    def update_table(self, table_name, table_options = None, reserved_throughput = None):
         """ 
         说明：更新表属性，目前只支持修改预留读写吞吐量。
         
@@ -258,7 +258,7 @@ class OTSClient(object):
         return self._request_helper('DescribeTable', table_name)
 
     def get_row(self, table_name, primary_key, columns_to_get=None, 
-                column_filter=None, max_version=None, time_range=None,
+                column_filter=None, max_version=1, time_range=None,
                 start_column=None, end_column=None, token=None):
         """
         说明：获取一行数据。
@@ -296,7 +296,7 @@ class OTSClient(object):
         ``table_name``是对应的表名。
         ``row``是行数据，包括主键和属性列。
         ``condition``表示执行操作前做条件检查，满足条件才执行，是tablestore.metadata.Condition类的实例。
-        目前只支持对行的存在性进行检查，检查条件包括：'IGNORE'，'EXPECT_EXIST'和'EXPECT_NOT_EXIST'。
+        目前支持两种条件检测，一是对行的存在性进行检查，检查条件包括：'IGNORE'，'EXPECT_EXIST'和'EXPECT_NOT_EXIST';二是对属性列值的条件检测。
         ``return_type``表示返回类型，是tablestore.metadata.ReturnType类的实例，目前仅支持返回PrimaryKey，一般用于主键列自增中。
 
         返回：本次操作消耗的CapacityUnit和需要返回的行数据。
@@ -324,7 +324,7 @@ class OTSClient(object):
         ``table_name``是对应的表名。
         ``row``表示更新的行数据，包括主键列和属性列，主键列是list；属性列是dict。
         ``condition``表示执行操作前做条件检查，满足条件才执行，是tablestore.metadata.Condition类的实例。
-        目前只支持对行的存在性进行检查，检查条件包括：'IGNORE'，'EXPECT_EXIST'和'EXPECT_NOT_EXIST'。
+        目前支持两种条件检测，一是对行的存在性进行检查，检查条件包括：'IGNORE'，'EXPECT_EXIST'和'EXPECT_NOT_EXIST';二是对属性列值的条件检测。
         ``return_type``表示返回类型，是tablestore.metadata.ReturnType类的实例，目前仅支持返回PrimaryKey，一般用于主键列自增中。
 
         返回：本次操作消耗的CapacityUnit和需要返回的行数据return_row
@@ -356,7 +356,7 @@ class OTSClient(object):
         ``table_name``是对应的表名。
         ``row``表示行数据，在delete_row仅包含主键。
         ``condition``表示执行操作前做条件检查，满足条件才执行，是tablestore.metadata.Condition类的实例。
-        目前只支持对行的存在性进行检查，检查条件包括：'IGNORE'，'EXPECT_EXIST'和'EXPECT_NOT_EXIST'。
+        目前支持两种条件检测，一是对行的存在性进行检查，检查条件包括：'IGNORE'，'EXPECT_EXIST'和'EXPECT_NOT_EXIST';二是对属性列值的条件检测。
 
         返回：本次操作消耗的CapacityUnit和需要返回的行数据return_row
 
@@ -468,7 +468,7 @@ class OTSClient(object):
                   columns_to_get=None, 
                   limit=None, 
                   column_filter=None,
-                  max_version=None,
+                  max_version=1,
                   time_range=None,
                   start_column=None,
                   end_column=None,
@@ -494,13 +494,14 @@ class OTSClient(object):
         ``consumed``表示本次操作消耗的CapacityUnit，是tablestore.metadata.CapacityUnit类的实例。
         ``next_start_primary_key``表示下次get_range操作的起始点的主健列，类型为dict。
         ``row_list``表示本次操作返回的行数据列表，格式为：[Row, ...]。
+        ``next_token``表示最后一行是否还有属性列没有读完，如果next_token不为None，则表示还有，下次get_range需要填充此值。
 
         示例：
 
             inclusive_start_primary_key = [('gid',1), ('uid',INF_MIN)] 
             exclusive_end_primary_key = [('gid',4), ('uid',INF_MAX)] 
             columns_to_get = ['name', 'address', 'mobile', 'age']
-            consumed, next_start_primary_key, row_list = client.get_range(
+            consumed, next_start_primary_key, row_list, next_token = client.get_range(
                         'myTable', 'FORWARD', 
                         inclusive_start_primary_key, exclusive_end_primary_key,
                         columns_to_get, 100
@@ -523,7 +524,7 @@ class OTSClient(object):
                    columns_to_get=None, 
                    count=None,
                    column_filter=None,
-                   max_version=None, 
+                   max_version=1, 
                    time_range=None,
                    start_column=None,
                    end_column=None,
@@ -595,4 +596,14 @@ class OTSClient(object):
                     left_count -= 1
                     if left_count <= 0:
                         return 
+
+    def _validate_parameter(self, endpoint, access_key_id, access_key_secret, instance_name):
+        if endpoint is None or len(endpoint) == 0:
+            raise OTSClientError('endpoint is None or empty.')
+        if access_key_id is None or len(access_key_id) == 0:
+            raise OTSClientError('access_key_id is None or empty.')
+        if access_key_secret is None or len(access_key_secret) == 0:
+            raise OTSClientError('access_key_secret is None or empty.')
+        if instance_name is None or len(instance_name) == 0:
+            raise OTSClientError('instance_name is None or empty.')
 

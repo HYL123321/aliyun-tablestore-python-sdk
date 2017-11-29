@@ -31,15 +31,13 @@ def put_row(client):
     row = Row(primary_key, attribute_columns)
 
     # Expect not exist: put it into table only when this row is not exist.
+    row.attribute_columns = [('name','John'), ('mobile',15100000000), ('address','China'), ('age',25)]
     consumed, return_row = client.put_row(table_name, row)
     print ('Write succeed, consume %s write cu.' % consumed.write)
 
-    row.attribute_columns = [('name','John'), ('mobile',15100000000), ('address','China'), ('age',25)]
     consumed, return_row = client.put_row(table_name, row, return_type = ReturnType.RT_PK)
     print ('Write succeed, consume %s write cu.' % consumed.write)
     print ('Primary key:%s' % return_row.primary_key)
-
-    row.attribute_columns = [('name','John'), ('mobile',15100000000), ('address','China'), ('age',25)]
 
 def batch_write_row(client):
     put_row_items = []

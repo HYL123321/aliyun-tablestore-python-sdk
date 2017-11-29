@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 
 class PrimaryKey(object):
     def __init__(self):

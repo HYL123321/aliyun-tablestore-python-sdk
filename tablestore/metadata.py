@@ -259,7 +259,7 @@ class SingleColumnCondition(ColumnCondition):
         """
         if not isinstance(pass_if_missing, bool):
             raise OTSClientError(
-                "The input pass_if_missing should be an instance of Bool, not %s"%
+                "The input pass_if_missing of SingleColumnCondition should be an instance of Bool, not %s"%
                 pass_if_missing.__class__.__name__
             )
         self.pass_if_missing = pass_if_missing
@@ -270,7 +270,7 @@ class SingleColumnCondition(ColumnCondition):
     def set_latest_version_only(self, latest_version_only):
         if not isinstance(latest_version_only, bool):
             raise OTSClientError(
-                "The input latest_version_only should be an instance of Bool, not %s"%
+                "The input latest_version_only of SingleColumnCondition should be an instance of Bool, not %s"%
                 latest_version_only.__class__.__name__
             )
         self.latest_version_only = latest_version_only
@@ -279,12 +279,22 @@ class SingleColumnCondition(ColumnCondition):
         return self.latest_version_only
 
     def set_column_name(self, column_name):
+        if not isinstance(latest_version_only, (six.text_type, six.binary_type)):
+            raise OTSClientError(
+                    "The input column_name of SingleColumnCondition should be an instance of str, not %s"%
+                    latest_version_only.__class__.__name__
+                    )
+        if column_name is None:
+            raise OTSClientError("The input column_name of SingleColumnCondition should not be None")
         self.column_name = column_name
 
     def get_column_name(self):
         return self.column_name
 
     def set_column_value(self, column_value):
+        if column_value is None:
+            raise OTSClientError("The input column_value of SingleColumnCondition should not be None")
+
         self.column_value = column_value
 
     def get_column_value(self):
@@ -293,7 +303,8 @@ class SingleColumnCondition(ColumnCondition):
     def set_comparator(self, comparator):
         if comparator not in ComparatorType.__values__:
             raise OTSClientError(
-                "Expect input comparator should be one of %s, but '%s'"%(str(ComparatorType.__members__), comparator)
+                    "Expect input comparator of SingleColumnCondition should be one of %s, but '%s'" % 
+                    (str(ComparatorType.__members__), comparator)
             )
         self.comparator = comparator
 
